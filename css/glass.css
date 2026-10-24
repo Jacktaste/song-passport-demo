@@ -1,0 +1,188 @@
+/* Glass: the whole app floats over soft colour. One file on top of app.css, artist.css, audius.css and platforms.css.
+   Its <link> sits at the end of <body> in index.html, so it comes after the view sheets that load later into <head>.
+   Surfaces turn into frosted glass with a bright rim; the sidebar, top bar, tab bar and players float as panels.
+   Text stays on the same colours as before, so contrast is unchanged; reading surfaces (sheets, menus, modals) stay mostly solid. */
+:root {
+  --ground: #F2EFF8;
+  --bloom-1: rgba(126,27,204,.30); --bloom-2: rgba(224,69,123,.20); --bloom-3: rgba(43,107,255,.18);
+  --bg: #F2EFF8; --bg-2: rgba(255,255,255,.4);
+  --surface: rgba(255,255,255,.62); --surface-2: rgba(255,255,255,.44); --surface-3: rgba(52,34,92,.07);
+  --line: rgba(52,34,92,.09); --line-strong: rgba(52,34,92,.13);
+  --accent-soft: rgba(126,27,204,.11); --info-soft: rgba(91,35,225,.10);
+  --ok-soft: rgba(20,118,58,.11); --money-soft: rgba(20,118,58,.11); --warn-soft: rgba(214,120,20,.14); --crit-soft: rgba(185,28,28,.10);
+  --glass: rgba(255,255,255,.58); --glass-side: rgba(255,255,255,.52); --glass-strong: rgba(255,255,255,.86);
+  --rim: rgba(255,255,255,.75); --rim-hi: inset 0 1px 0 rgba(255,255,255,.7);
+  --blur: saturate(1.7) blur(24px);
+  --shadow-sm: 0 1px 2px rgba(40,20,80,.04), 0 8px 24px rgba(40,20,80,.05);
+  --shadow: 0 2px 6px rgba(40,20,80,.05), 0 16px 40px rgba(40,20,80,.08);
+  --shadow-lg: 0 30px 70px rgba(40,20,80,.20);
+  --ring-hole: #F7F5FB;
+  --r-lg: 22px; --r: 18px; --r-sm: 14px; --r-xs: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --ground: #09070E;
+  --bloom-1: rgba(126,27,204,.42); --bloom-2: rgba(224,69,123,.22); --bloom-3: rgba(43,107,255,.22);
+  --bg: #09070E; --bg-2: rgba(255,255,255,.03);
+  --surface: rgba(255,255,255,.06); --surface-2: rgba(255,255,255,.04); --surface-3: rgba(255,255,255,.09);
+  --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.12);
+  --accent-soft: rgba(193,123,245,.16); --info-soft: rgba(193,123,245,.14);
+  --ok-soft: rgba(74,222,128,.12); --money-soft: rgba(74,222,128,.12); --warn-soft: rgba(251,191,36,.12); --crit-soft: rgba(248,113,113,.12);
+  --glass: rgba(20,16,30,.55); --glass-side: rgba(20,16,30,.5); --glass-strong: rgba(24,20,34,.9);
+  --rim: rgba(255,255,255,.10); --rim-hi: inset 0 1px 0 rgba(255,255,255,.08);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.2);
+  --shadow: 0 2px 6px rgba(0,0,0,.3), 0 16px 40px rgba(0,0,0,.3);
+  --shadow-lg: 0 30px 70px rgba(0,0,0,.6);
+  --ring-hole: #17131F;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #09070E;
+  --bloom-1: rgba(126,27,204,.42); --bloom-2: rgba(224,69,123,.22); --bloom-3: rgba(43,107,255,.22);
+  --bg: #09070E; --bg-2: rgba(255,255,255,.03);
+  --surface: rgba(255,255,255,.06); --surface-2: rgba(255,255,255,.04); --surface-3: rgba(255,255,255,.09);
+  --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.12);
+  --accent-soft: rgba(193,123,245,.16); --info-soft: rgba(193,123,245,.14);
+  --ok-soft: rgba(74,222,128,.12); --money-soft: rgba(74,222,128,.12); --warn-soft: rgba(251,191,36,.12); --crit-soft: rgba(248,113,113,.12);
+  --glass: rgba(20,16,30,.55); --glass-side: rgba(20,16,30,.5); --glass-strong: rgba(24,20,34,.9);
+  --rim: rgba(255,255,255,.10); --rim-hi: inset 0 1px 0 rgba(255,255,255,.08);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.2);
+  --shadow: 0 2px 6px rgba(0,0,0,.3), 0 16px 40px rgba(0,0,0,.3);
+  --shadow-lg: 0 30px 70px rgba(0,0,0,.6);
+  --ring-hole: #17131F;
+}
+
+/* ---------- The colour behind everything ---------- */
+body { background: var(--ground); }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40vmax 40vmax at 8% 4%, var(--bloom-1), transparent 70%),
+    radial-gradient(34vmax 34vmax at 96% 42%, var(--bloom-2), transparent 70%),
+    radial-gradient(38vmax 38vmax at 30% 104%, var(--bloom-3), transparent 70%),
+    var(--ground); }
+.public { background: transparent; }
+
+/* ---------- Glass surfaces ---------- */
+.card, .song-hero, .ah-card, .ah-tile, .ol-row, .ol-linkbar, .ol-addtile, .fchip, .a2hs, .seg, .aw-toggle {
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.card, .song-hero, .ah-card, .ah-tile, .ol-row, .ol-linkbar, .ol-addtile, .a2hs {
+  border: 1px solid var(--rim); box-shadow: var(--rim-hi), var(--shadow-sm); }
+.card-head { border-bottom-color: var(--line); }
+.card:has(.menu:not([hidden])) { position: relative; z-index: 20; }
+.card.hero { background: linear-gradient(135deg, rgba(126,27,204,.92) 0%, rgba(91,35,225,.84) 60%, rgba(59,42,134,.82) 100%);
+  border: 1px solid rgba(255,255,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 20px 50px rgba(91,35,225,.28); }
+.card.hero::after { background: radial-gradient(70% 90% at 100% 0%, rgba(255,255,255,.16), transparent 60%); }
+.ring::before { background: var(--ring-hole); }
+.tl-item::before, .step-n, .tile-ic { background: var(--ring-hole); }
+.avatars .avatar { box-shadow: 0 0 0 2px var(--ring-hole); }
+
+/* Reading surfaces stay near-solid so long text and forms are easy. */
+.modal, .menu, .pl-sheet { background: var(--glass-strong); -webkit-backdrop-filter: saturate(1.8) blur(40px); backdrop-filter: saturate(1.8) blur(40px);
+  border: 1px solid var(--rim); box-shadow: var(--rim-hi), var(--shadow-lg); }
+.modal-back, .pl-back { background: rgba(9,7,14,.28); }
+.toast { box-shadow: var(--shadow-lg); }
+
+/* Controls */
+.btn { border-color: var(--line-strong); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.btn-ghost { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.btn-primary { box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 6px 18px rgba(126,27,204,.28); }
+.btn-dark { box-shadow: inset 0 1px 0 rgba(255,255,255,.14), var(--shadow-sm); }
+.input, select.input, textarea.input { background: var(--surface); border-color: var(--line-strong); }
+.input:focus { background: var(--glass-strong); }
+.seg { background: var(--surface-3); }
+.seg button.on { background: var(--glass-strong); box-shadow: var(--rim-hi), 0 1px 4px rgba(40,20,80,.12); }
+
+/* ---------- Floating chrome ---------- */
+.sidebar { top: 12px; height: calc(100vh - 24px); margin: 12px 0 12px 12px; border: 1px solid var(--rim); border-radius: 26px;
+  box-shadow: var(--rim-hi), var(--shadow); }
+.sidebar-foot { border-top-color: var(--line); }
+.nav a { border-radius: 12px; }
+.nav a.active { background: var(--glass-strong); box-shadow: var(--rim-hi), 0 1px 4px rgba(40,20,80,.08); }
+.topbar { top: 12px; margin: 12px 20px 0; border: 1px solid var(--rim); border-radius: 22px; padding-left: 16px; padding-right: 16px;
+  box-shadow: var(--rim-hi), var(--shadow-sm); }
+.topbar.scrolled { border-color: var(--rim); box-shadow: var(--rim-hi), var(--shadow); }
+.topbar .search input { background: var(--surface-3); }
+@media (max-width: 900px) {
+  .sidebar { top: 8px; left: 8px; height: calc(100% - 16px); margin: 0; width: 280px; border-radius: 24px;
+    transform: translateX(calc(-100% - 16px)); background: var(--glass-strong); }
+  .topbar { margin: max(8px, env(safe-area-inset-top)) 10px 0; top: max(8px, env(safe-area-inset-top)); padding-left: 8px; padding-right: 8px; }
+}
+@media (max-width: 760px) {
+  .tabbar { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; border: 1px solid var(--rim);
+    border-radius: 30px; box-shadow: var(--rim-hi), var(--shadow); }
+  .tabbar a { border-radius: 22px; }
+  .tabbar a.active { background: var(--surface-3); }
+  .page { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  .a2hs { bottom: calc(92px + env(safe-area-inset-bottom)); }
+}
+.topbar { padding-top: 10px; }
+
+/* ---------- Listening (always the dark room, now glass) ---------- */
+.public.au-public { background: transparent; }
+.au, .au-dock { --card: rgba(255,255,255,.07); --chip: rgba(255,255,255,.10); --line: rgba(255,255,255,.08); --mini: rgba(42,22,64,.62); }
+.au { position: relative; isolation: isolate; background: transparent; }
+.au::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(44vmax 44vmax at 6% 0%, rgba(126,27,204,.55), transparent 70%),
+    radial-gradient(34vmax 34vmax at 100% 40%, rgba(224,69,123,.30), transparent 70%),
+    radial-gradient(40vmax 40vmax at 26% 106%, rgba(43,107,255,.28), transparent 70%),
+    #0A0710; }
+.au-card, .au-presale, .au-q, .au-plan, .au-toggle, .au-srcs button, .au-shop .box, .au-mosaic {
+  -webkit-backdrop-filter: saturate(1.6) blur(24px); backdrop-filter: saturate(1.6) blur(24px);
+  border: 1px solid rgba(255,255,255,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.au-card, .au-presale { border-radius: 24px; }
+.au-q { border-radius: 14px; }
+.au-chip { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.au-row:hover, .au-tr:hover { background: rgba(255,255,255,.06); }
+.au-tr.on { background: rgba(255,255,255,.09); }
+.au-noads { border-color: rgba(201,139,255,.4); background: rgba(255,255,255,.06); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.au-story { background: rgba(106,20,184,.80);
+  -webkit-backdrop-filter: saturate(1.6) blur(30px); backdrop-filter: saturate(1.6) blur(30px); box-shadow: inset 0 1px 0 rgba(255,255,255,.14); }
+@media (max-width: 420px) { .au-hi h1 { font-size: 20px; } }
+.au-input { background: rgba(255,255,255,.08); }
+.pl-back .pl-sheet.au-sheet { background: rgba(26,22,36,.9); border-color: rgba(255,255,255,.1); }
+
+/* Phone: a floating mini player over a floating tab bar. */
+.au-mini { left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom)); height: 60px; border-radius: 22px;
+  background: rgba(46,26,70,.62); border: 1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter: saturate(1.6) blur(30px); backdrop-filter: saturate(1.6) blur(30px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 12px 30px rgba(0,0,0,.35); }
+.au-mini .au-art { border-radius: 12px; }
+.au-mini .prog { left: 18px; right: 18px; bottom: 6px; border-radius: 1px; }
+.au-tabs { left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 68px; padding: 0 6px; border-radius: 34px;
+  background: rgba(22,18,32,.66); border: 1px solid rgba(255,255,255,.14);
+  -webkit-backdrop-filter: saturate(1.6) blur(30px); backdrop-filter: saturate(1.6) blur(30px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 30px rgba(0,0,0,.4); }
+.au-tabs { align-items: center; }
+.au-tabs a { height: 56px; border-radius: 26px; justify-content: center; }
+.au-tabs a.on { background: rgba(255,255,255,.14); }
+
+/* Desktop: three glass panels and a floating player bar. */
+@media (min-width: 900px) {
+  .au-lib, .au-np, .au-main { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); border-radius: 22px;
+    -webkit-backdrop-filter: saturate(1.6) blur(28px); backdrop-filter: saturate(1.6) blur(28px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  .au-lib nav a { border-radius: 12px; }
+  .au-lib nav a.on { background: rgba(255,255,255,.12); }
+  .au-np .box { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.09); }
+  .au-bar { left: 12px; right: 12px; bottom: 10px; height: 76px; border-radius: 24px; background: rgba(255,255,255,.09);
+    border: 1px solid rgba(255,255,255,.16); -webkit-backdrop-filter: saturate(1.6) blur(30px); backdrop-filter: saturate(1.6) blur(30px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 16px 40px rgba(0,0,0,.4); }
+  .au-bar .l .au-art { border-radius: 12px; }
+  .au-story { border-radius: 22px; border: 1px solid rgba(255,255,255,.16); }
+  .au-bar .c .sc div { background: rgba(255,255,255,.18); }
+}
+
+/* ---------- One Link and Listener Key: already dark glass, add the colour behind ---------- */
+.public.ol-public { background:
+    radial-gradient(44vmax 44vmax at 6% 0%, rgba(126,27,204,.5), transparent 70%),
+    radial-gradient(34vmax 34vmax at 100% 50%, rgba(224,69,123,.26), transparent 70%),
+    var(--au-ink, #0A0710); background-attachment: fixed; }
+.ol-card, .ol-hero { -webkit-backdrop-filter: saturate(1.6) blur(24px); backdrop-filter: saturate(1.6) blur(24px);
+  border: 1px solid rgba(255,255,255,.10); }
+
+/* Fewer layers to blend when someone asks for less transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --surface: var(--glass-strong); --glass: var(--glass-strong); --glass-side: var(--glass-strong); }
+  .au, .au-dock { --card: #1A1A21; }
+}
