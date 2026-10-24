@@ -503,7 +503,7 @@ app.route('/signin', async ({ el, query }) => {
       <p class="muted">We email you a link. Tap it and you're straight back here. No password, and new here is fine: the same link sets up your free account.</p></div>
     ${query.get('expired') ? html`<div class="callout warn">${icon('alert')}<div>That link expired or was already used. Request a new one.</div></div>` : ''}
     <form class="stack" id="f">
-      <label class="field"><span>Email</span><input class="input" type="email" name="email" required autocomplete="email" placeholder="you@studio.com"></label>
+      <label class="field"><span>Email</span><input class="input" type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
       <button class="btn btn-primary btn-lg">Email me a sign-in link</button>
     </form>
     <div id="sent"></div>

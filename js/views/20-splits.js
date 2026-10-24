@@ -476,7 +476,7 @@ app.songTab({
 
     const contributorForm = (l = {}) => html`<form class="form-grid" id="cf">
       <label class="field"><span>Full name</span><input class="input" name="name" required value="${l.name || ''}" placeholder="Legal or professional name"></label>
-      <label class="field"><span>Email <span class="hint">we email them the signing link</span></span><input class="input" type="email" name="email" value="${l.email || ''}" placeholder="name@studio.com"></label>
+      <label class="field"><span>Email <span class="hint">we email them the signing link</span></span><input class="input" type="email" name="email" value="${l.email || ''}" placeholder="name@example.com"></label>
       <label class="check full"><input type="checkbox" name="company" ${l.entity === 'company' ? 'checked' : ''}><span class="small">This is a company (label, publisher, management). The person who signs confirms they have authority to sign for it.</span></label>
       <div class="field full"><span>Roles</span><div class="sp-roles">${ROLES.map(r => html`<button type="button" class="sp-role ${(l.roles || []).includes(r) ? 'on' : ''}" data-role="${r}">${r}</button>`)}</div></div>
       <label class="field"><span>${term('IPI')} <span class="hint">optional, 9–11 digits</span></span><input class="input mono" name="ipi" value="${l.ipi || ''}" inputmode="numeric"></label>
