@@ -1,6 +1,6 @@
 // One Link: the artist's editor (/onelink), the public page listeners see (/l/:handle) and the listener's
 // own Listener Keys (/key). Everything a listener buys here pays into the Song Wallet.
-import { app, html, raw, api, toast, modal, money, ago, date, on, busy, formData, esc, comingBar } from '../app.js';
+import { app, html, raw, api, toast, modal, money, ago, date, on, busy, formData, esc, comingBar, authStart } from '../app.js';
 import { ico, KIND, cover, initialsOf, sheet, whereBar, copyText, shortDate } from '../pl.js';
 
 app.nav({ id: 'onelink', label: 'One Link', href: '/onelink', icon: 'link', section: 'Listeners', order: 60, auth: true , artist: true, soon: true });
@@ -107,7 +107,7 @@ function signInSheet(d, handle, title, body, after) {
       <div id="sent"></div></div>`.s;
     el.querySelector('#f').addEventListener('submit', async e => {
       e.preventDefault();
-      const r = await busy(e.target.querySelector('button'), () => api.post('/api/auth/start', { email: formData(e.target).email, next: `/l/${handle}` }));
+      const r = await busy(e.target.querySelector('button'), () => authStart('/api/auth/start', { email: formData(e.target).email, next: `/l/${handle}` }));
       el.querySelector('#sent').innerHTML = html`<div class="callout ok">${ico('check')}<div><b>Check your email.</b> Tap the link and you're in.
         ${r.devLink ? html`<div class="small" style="margin-top:6px">Email isn't connected on this server yet: <a href="${r.devLink}">open your link</a></div>` : ''}</div></div>`.s;
     });

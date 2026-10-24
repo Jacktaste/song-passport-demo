@@ -145,7 +145,9 @@ async function route() {
     };
     if (motion && sameKind) {
       el.remove(); // off the page while the old view is captured, so no view-transition name appears twice
-      await document.startViewTransition(put).updateCallbackDone.catch(() => {});
+      const vt = document.startViewTransition(put);
+      vt.ready.catch(() => {}); vt.finished.catch(() => {}); // a quick next tap skips this one, which is fine
+      await vt.updateCallbackDone.catch(() => {});
     } else { put(); if (!matchMedia('(prefers-reduced-motion: reduce)').matches) el.classList.add('fade-in'); }
   };
   if (sameKind) {
@@ -323,6 +325,23 @@ export async function busy(btn, fn) {
   try { return await fn(); }
   catch (e) { toast(e.message, { error: true }); throw e; }
   finally { btn?.classList.remove('loading'); }
+}
+
+// Start a sign-in (email link or code). New accounts are asked for a birth year once: nobody under 13 can sign up.
+export async function authStart(path, body) {
+  try { return await api.post(path, body); }
+  catch (e) {
+    if (e.details?.code !== 'need_birth_year') throw e;
+    const now = new Date().getFullYear();
+    const year = await modal({
+      title: 'One question first',
+      body: html`<div class="stack"><p class="muted">You need to be 13 or older to use Audius. We only use this to check that.</p>
+        <label class="field"><span>Year you were born</span><select class="input" data-f="year">${Array.from({ length: 100 }, (_, i) => now - i).map(y => html`<option value="${y}" ${y === now - 25 ? 'selected' : ''}>${y}</option>`)}</select></label></div>`,
+      actions: [{ label: 'Cancel', value: null }, { label: 'Continue', primary: true, onClick: (close, m) => close(Number(m.querySelector('[data-f=year]').value)) }]
+    });
+    if (typeof year !== 'number') { const c = new Error('Sign-in cancelled'); c.cancelled = true; throw c; }
+    return api.post(path, { ...body, birth_year: year });
+  }
 }
 
 // Delegate events inside a view: on(el, 'click', '[data-act=save]', (e, target) => ...)
@@ -545,7 +564,7 @@ app.route('/signin', async ({ el, query }) => {
   el.querySelector('#f').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
-    const r = await busy(btn, () => api.post('/api/auth/start', { email: formData(e.target).email, next: query.get('next') || '/home' }));
+    const r = await busy(btn, () => authStart('/api/auth/start', { email: formData(e.target).email, next: query.get('next') || '/home' }));
     el.querySelector('#sent').innerHTML = html`<div class="callout ok">${icon('mail')}<div><b>Check your inbox.</b> The link expires in 30 minutes.
       ${r.devLink ? html`<div class="small" style="margin-top:6px">Email isn't connected on this server yet, so here is your link: <a href="${r.devLink}">Sign in now</a></div>` : ''}</div></div>`.s;
   });

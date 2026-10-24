@@ -265,6 +265,8 @@ body.au-on .au-dock { display: block; }
 .au-empty h2 { font-size: 22px; }
 
 /* Bottom sheet on the dark app */
+/* Sheets open outside the listening app's shell, so they carry its colours themselves (the Pay buttons need --acc). */
+.au-sheet { --bg: #0B0B0F; --card: #24242D; --chip: #2E2E38; --line: #2A2A33; --ink: #F5F5F7; --mut: #A1A1AA; --lav: #C98BFF; --acc: #7E1BCC; --fg: var(--ink); --muted: var(--mut); }
 .pl-back .pl-sheet.au-sheet { background: #1A1A21; color: #F5F5F7; }
 .au-sheet .muted, .au-sheet small { color: #A1A1AA; }
 .au-sheet h2 { color: #F5F5F7; font-size: 24px; letter-spacing: -0.02em; }
@@ -335,3 +337,16 @@ body.au-on .au-dock { display: block; }
 .au-miss .t small { color: var(--mut); font-size: 13px; }
 .au-file { position: relative; overflow: hidden; }
 .au-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Playlists: a four-cover mosaic, the name field, and edit mode rows. */
+.au-mosaic { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; background: var(--card); }
+.au-mosaic > .au-art { width: 100% !important; height: 100% !important; border-radius: 0 !important; }
+.au-input { width: 100%; box-sizing: border-box; border: 0; border-radius: 10px; padding: 14px; background: #24242D; color: var(--ink, #F5F5F7); font: inherit; font-size: 16px; }
+.au-input:focus { outline: 2px solid #7E1BCC; outline-offset: 0; }
+.au-row.au-edit { cursor: default; }
+.au-row.au-edit .au-ib[disabled] { opacity: .3; }
+.au-head .au-ib { color: var(--mut); }
+
+/* Open Audio Protocol tracks: what they are, under the player. */
+.au-np-open .box { background: rgba(255,255,255,.08); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.au-np-open .h { font-weight: 700; }

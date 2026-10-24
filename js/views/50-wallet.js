@@ -170,7 +170,7 @@ function allocRows(f, { showSong = false } = {}) {
       ${a.payee_type === 'song' ? html`<span class="avatar sm" style="background:var(--grad)">${icon('git')}</span>` : html`<span class="avatar sm" style="background:${colorFor(a.email || a.name || i)}">${initials(a.name)}</span>`}
       <span class="who">${a.payee_type === 'song' ? html`<a href="#/song/${a.payee_song_id}?tab=wallet">${a.name}</a> <span class="muted small">(remix share, split again below)</span>` : a.name}
         ${a.kind === 'release' ? html` <span class="badge ok plain">Released</span>` : a.kind === 'own_share' ? html` <span class="badge info plain">Own share</span>` : a.kind === 'pay_now' ? html` <span class="badge warn plain">Paid now, owed</span>` : ''}${showSong ? html` <span class="muted small">· ${a.title}</span>` : ''}</span>
-      <span class="bps">${a.kind === 'own_share' || a.kind === 'pay_now' ? 'all' : `${pct(a.bps)} ${a.pool === 'publishing' ? 'pub' : 'master'}`}</span>
+      <span class="bps">${a.kind === 'own_share' || a.kind === 'pay_now' ? 'all' : `${pct(a.bps)} ${a.pool === 'publishing' ? 'pub' : 'master income'}`}</span>
       <b class="wl-money">${fmt(a.amount, a.currency)}</b></div>`)}
     ${holds.map(h => html`<div class="wl-alloc-row"><span class="avatar sm" style="background:var(--warn)">${icon('clock')}</span>
       <span class="who">${h.status === 'held' ? html`<b>Held</b> <span class="muted small">${h.reason}${h.expires_at ? ` · back to the payer on ${date(h.expires_at)} if unsigned` : ''}</span>` : h.status === 'returned' ? html`<span class="muted">Not signed in time: returned to the payer of record ${date(h.released_at)}</span>` : h.status === 'reversed' ? html`<span class="muted">Reversed</span>` : html`<span class="muted">Was held, released ${date(h.released_at)}</span>`}</span><span></span>
@@ -795,10 +795,10 @@ function addIncome(song, w) {
         if (!w.split) { box.innerHTML = ''; return; }
         const key = f.type === 'publishing' ? 'publishing_bps' : 'master_bps';
         const lines = w.split.lines.filter(l => l[key]);
-        if (!lines.length) { box.innerHTML = html`<div class="callout warn">${icon('alert')}<div>The signed split has no ${key === 'publishing_bps' ? 'publishing' : 'master'} shares, so this would be held until a split with them is signed.</div></div>`.s; return; }
+        if (!lines.length) { box.innerHTML = html`<div class="callout warn">${icon('alert')}<div>The signed split has no ${key === 'publishing_bps' ? 'publishing' : 'master income'} shares, so this would be held until a split with them is signed.</div></div>`.s; return; }
         const n = Math.round(parseFloat(String(f.amount).replace(/,/g, '')) * 100);
         const total = lines.reduce((s, l) => s + l[key], 0) || 1;
-        box.innerHTML = html`<div class="small muted" style="margin-bottom:6px">Split the same day by the signed passport (${key === 'publishing_bps' ? 'publishing' : 'master'} shares):</div><div class="wl-quote">${lines.map(l => html`<span>${l.name} <span class="muted small">${pct(l[key])}</span></span><span class="wl-money">${n > 0 ? '≈ ' + money(Math.floor(n * l[key] / total), f.currency) : ''}</span>`)}</div>`.s;
+        box.innerHTML = html`<div class="small muted" style="margin-bottom:6px">Split the same day by the signed passport (${key === 'publishing_bps' ? 'publishing' : 'master income'} shares):</div><div class="wl-quote">${lines.map(l => html`<span>${l.name} <span class="muted small">${pct(l[key])}</span></span><span class="wl-money">${n > 0 ? '≈ ' + money(Math.floor(n * l[key] / total), f.currency) : ''}</span>`)}</div>`.s;
       };
       form.addEventListener('input', upd); form.addEventListener('change', upd); upd();
     }

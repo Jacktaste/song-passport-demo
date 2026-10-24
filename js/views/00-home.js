@@ -198,7 +198,7 @@ function welcome(el, meta) {
       ['scan', 'Nothing left in limbo', 'The passport flags missing codes and registrations so no money sits unclaimed.'],
       ['wallet', 'Paid the same day', 'Income lands in the Song Wallet and splits to the cent the day it arrives.'],
       ['rocket', 'Release from the passport', 'Send music to every store with the codes and splits already done.'],
-      ['shield', 'Yours, provably', 'A tamper-evident history for every song, anchored on the Audius protocol.']
+      ['shield', 'Yours, provably', 'A tamper-evident history for every song, anchored on the Open Audio Protocol.']
     ].map(([i, t, d]) => html`<div class="card card-pad stack-sm"><div class="feature-icon">${icon(i)}</div><h2 class="h3">${t}</h2><p class="muted">${d}</p></div>`)}
   </section>
   <section class="card hero card-pad" style="margin-top:22px;text-align:center;padding:42px 22px">

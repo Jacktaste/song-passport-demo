@@ -1,7 +1,7 @@
 // Quick split (#/send): one screen, song title, people, shares, one "Send".
 // Equal split by default, one percentage for master and publishing (an advanced toggle separates them).
 // Signed-out senders confirm their email with a 6-digit code inline, then everything is created in one call.
-import { app, html, api, toast, icon, on, busy, initials, colorFor, pct } from '../app.js';
+import { app, html, api, toast, icon, on, busy, initials, colorFor, pct, authStart } from '../app.js';
 import { shareLinksView, wireShareLinks } from './20-splits.js';
 import { confirmNewSong } from './10-discover.js';
 
@@ -196,7 +196,7 @@ app.route('/send', async ({ el, user }) => {
     if (user) return submit(t).catch(() => {});
     // Signed out: confirm the email with a code, right here.
     const em = named()[0].email.trim();
-    const r = await busy(t, () => api.post('/api/auth/code/start', { email: em })).catch(() => null);
+    const r = await busy(t, () => authStart('/api/auth/code/start', { email: em })).catch(() => null);
     if (!r) return;
     codeFor = r.target; devCode = r.devCode || null; step = 'code';
     repaintSend();

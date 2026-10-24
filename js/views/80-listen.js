@@ -45,7 +45,11 @@ const SV = {
   check: '<path d="m5 12 5 5 9-10"/>',
   seal: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
   upload: '<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  addlist: '<path d="M4 6h13M4 12h13M4 18h8M18 15v6M15 18h6"/>',
+  up: '<path d="m6 15 6-6 6 6"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'
 };
 const I = (n, style = '') => raw(`<svg class="ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${style ? ` style="${style}"` : ''}>${SV[n] || ''}</svg>`);
 const COLORS = ['#2F6FDB', '#7E1BCC', '#E0703A', '#1F9E7A', '#B83D74', '#B8901A', '#5B2BE0', '#1F56B8'];
@@ -66,7 +70,7 @@ const roleLine = roles => [].concat(roles || []).map(r => String(r).replace(/_/g
 // ---------- the player: one queue, kept across pages ----------
 const P = { q: [], i: -1, song: null, d: null, audio: null, playing: false, pos: 0, dur: 0, sent: 0, tick: null, shuffle: false, rc: null, rcAt: 0 };
 async function playList(list, i = 0, { shuffle = false } = {}) {
-  if (!app.user) return signIn();
+  if (!app.user && !list[i]?.open_audio) return signIn();
   P.q = list.slice(); P.i = i; P.shuffle = shuffle;
   await start();
 }
@@ -77,7 +81,8 @@ async function start() {
   if (!s) { P.song = null; paintDock(); return; }
   P.song = s; P.d = null; P.pos = 0; P.sent = 0; P.dur = s.duration_ms || 180000;
   if (s.audio) {
-    P.audio = new Audio(`/api/listen/songs/${s.id}/audio`);
+    // Open Audio Protocol tracks stream straight from the network; songs here stream from their passport's master.
+    P.audio = new Audio(s.open_audio ? s.stream : `/api/listen/songs/${s.id}/audio`);
     P.audio.addEventListener('loadedmetadata', () => { P.dur = P.audio.duration * 1000; paintDock(); });
     P.audio.addEventListener('ended', () => next());
     P.audio.play().catch(() => {});
@@ -85,6 +90,7 @@ async function start() {
   P.playing = true;
   P.tick = setInterval(step, 1000);
   paintDock();
+  if (s.open_audio) return;
   api(`/api/listen/songs/${s.id}`).then(d => { if (P.song?.id === s.id) { P.d = d; paintDock(); } }).catch(() => {});
   refreshReceipt();
 }
@@ -92,7 +98,7 @@ function step() {
   if (!P.playing || !P.song) return;
   P.pos = P.audio ? P.audio.currentTime * 1000 : Math.min(P.dur, P.pos + 1000);
   // Listening is reported every 20 seconds; the server pays by minutes, never by raw plays.
-  if (P.pos - P.sent >= 20000) {
+  if (P.pos - P.sent >= 20000 && !P.song.open_audio) {
     const ms = Math.round(P.pos - P.sent); P.sent = P.pos;
     api.post('/api/listen/plays', { song_id: P.song.id, ms: Math.min(20000, ms), shuffle: P.shuffle || undefined })
       .catch(err => { if (err.status === 403) { pause(); previewEnded(); } });
@@ -240,6 +246,7 @@ async function paintLib(el, active) {
     <div class="au-rows">
       <a class="au-row" href="#/listen/library?tab=liked"><div class="ico" style="background:#7E1BCC;color:#fff">${I('heart')}</div><div class="t"><b>Liked songs</b><small>${d.liked.length} ${d.liked.length === 1 ? 'song' : 'songs'}</small></div></a>
       <a class="au-row" href="#/listen/library?tab=owned"><div class="ico">${I('download')}</div><div class="t"><b>Songs I own</b><small>${d.owned.length} · yours forever</small></div></a>
+      ${(d.playlists || []).map(plRow)}
       ${d.passes.map(p => html`<a class="au-row" href="#/listen/artist/${p.owner_id}">${art(p.name, null, 'round')}<div class="t"><b>${p.name}</b><small>Artist Pass${p.key ? ` · ${p.key}` : ''}</small></div></a>`)}
       ${d.following.filter(f => !d.passes.some(p => p.owner_id === f.owner_id)).map(f => html`<a class="au-row" href="#/listen/artist/${f.owner_id}">${art(f.name, null, 'round')}<div class="t"><b>${f.name}</b><small>Artist</small></div></a>`)}
     </div>`.s;
@@ -254,26 +261,27 @@ function paintDock() {
     mini.hidden = !s;
     if (s) {
       mini.style.background = shade(hue((s.title || '') + (s.artist_credit || '')), 0.42);
-      mini.innerHTML = html`${songArt(s)}<div class="t" data-open><b>${s.title}</b><small>${s.artist_credit}${s.access === 'preview' && !P.shuffle ? ' · Preview' : ''}</small></div>
-        <button class="au-ib ${liked ? 'liked' : ''}" data-like aria-label="${liked ? 'Remove from Liked songs' : 'Add to Liked songs'}">${I('heart')}</button>
+      mini.innerHTML = html`${songArt(s)}<div class="t" data-open><b>${s.title}</b><small>${s.artist_credit}${s.open_audio ? ' · Open Audio' : s.access === 'preview' && !P.shuffle ? ' · Preview' : ''}</small></div>
+        ${s.open_audio ? '' : html`<button class="au-ib ${liked ? 'liked' : ''}" data-like aria-label="${liked ? 'Remove from Liked songs' : 'Add to Liked songs'}">${I('heart')}</button>`}
         <button class="au-ib" data-pp aria-label="${P.playing ? 'Pause' : 'Play'}">${I(P.playing ? 'pause' : 'play')}</button>
         <div class="prog"><i data-prog style="width:${Math.min(100, P.pos / (P.dur || 1) * 100)}%"></i></div>`.s;
     }
   }
   if (bar) {
     bar.hidden = !s;
-    if (s) bar.innerHTML = html`<div class="l" data-open>${songArt(s)}<div><b>${s.title}</b><small>${s.artist_credit}</small></div>
-        <button class="au-ib ${liked ? 'liked' : ''}" data-like aria-label="Like">${I('heart')}</button></div>
+    if (s) bar.innerHTML = html`<div class="l" data-open>${songArt(s)}<div><b>${s.title}</b><small>${s.artist_credit}${s.open_audio ? ' · Open Audio' : ''}</small></div>
+        ${s.open_audio ? '' : html`<button class="au-ib ${liked ? 'liked' : ''}" data-like aria-label="Like">${I('heart')}</button>`}</div>
       <div class="c"><div class="b"><button class="au-ib ${P.shuffle ? 'liked' : ''}" data-shuffle aria-label="Shuffle">${I('shuffle')}</button><button class="au-ib" data-prev aria-label="Previous">${I('prev')}</button>
         <button class="pp" data-pp aria-label="${P.playing ? 'Pause' : 'Play'}">${I(P.playing ? 'pause' : 'play', 'width:18px;height:18px')}</button>
         <button class="au-ib" data-next aria-label="Next">${I('next')}</button><span style="width:44px"></span></div>
         <div class="sc"><span data-pos>${mmss(P.pos)}</span><div><i data-prog style="width:${Math.min(100, P.pos / (P.dur || 1) * 100)}%"></i></div><span data-dur>${mmss(P.dur)}</span></div></div>
-      <div class="r">No ads. Ever.</div>`.s;
+      <div class="r">${s.open_audio ? 'Open Audio · not on your receipt yet' : 'No ads. Ever.'}</div>`.s;
   }
   if (np && getComputedStyle(np).display !== 'none') {
     if (!s) { np.innerHTML = ''; return; }
     const rc = P.rc, me = rc?.artists?.find(a => a.name === s.artist_credit);
     const total = rc?.recordings || 0;
+    if (s.open_audio) { np.innerHTML = openAudioBox(s).s; return; }
     np.innerHTML = html`<div class="ttl">${s.title}</div>${songArt(s)}
       ${rc && rc.paid ? html`<div class="box"><div class="h">Where your money goes this month</div>
         <div class="au-bar-money">${rc.artists.filter(a => a.amount > 0).map(a => html`<i style="flex:${a.amount};background:${a.name === s.artist_credit ? '#C98BFF' : '#3A3A46'}"></i>`)}</div>
@@ -283,6 +291,12 @@ function paintDock() {
       <div class="two"><button data-tip>Tip $2</button><button data-merch>Merch</button></div>`.s;
   }
 }
+// What an Open Audio Protocol track is, said plainly wherever it plays.
+const openAudioBox = (s, { head = true } = {}) => html`${head ? html`<div class="ttl">${s.title}</div>${songArt(s)}` : ''}
+  <div class="box"><div class="h">From the Open Audio Protocol</div>
+    <div class="small">${s.artist_credit} put this on the open network Audius runs on. It's free to play here.</div>
+    <div class="small muted">It isn't on a Song Passport yet, so it isn't on your receipt. When ${s.artist_credit} joins, their plays pay everyone on the song.</div>
+    ${s.url ? html`<a class="au-pill ghost" href="${s.url}" target="_blank" rel="noopener" style="align-self:flex-start">Open on Audius</a>` : ''}</div>`;
 // One listener for the dock and side panels, wherever they are painted.
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-pp],[data-next],[data-prev],[data-like],[data-open],[data-shuffle],[data-tip],[data-merch]');
@@ -305,6 +319,8 @@ async function quickTip() {
 }
 
 // ---------- shared bits ----------
+const openShelf = songs => songs?.length ? html`<div class="au-h2"><h2>Trending on the Open Audio Protocol</h2><small>Free to play · not on your receipt yet</small></div>
+  <div class="au-shelf">${songs.slice(0, 12).map(s => tile(s, 'open'))}</div>` : '';
 const tile = (s, list) => html`<button class="au-tile" data-play="${s.id}" data-list="${list}">${songArt(s)}<b>${s.title}${s.ai ? ' · AI' : ''}</b><small>${s.artist_credit}</small></button>`;
 const songRow = (s, list, sub = '') => html`<button class="au-row ${P.song?.id === s.id ? 'on' : ''}" data-play="${s.id}" data-list="${list}">${songArt(s)}<div class="t"><b>${s.title}${s.ai ? ' · AI' : ''}</b><small>${sub || s.artist_credit}</small></div></button>`;
 function wireLists(main, lists) {
@@ -353,13 +369,16 @@ app.route('/listen', async ({ el, user }) => {
         ${d.top.length ? html`<div class="au-h2"><h2>Top this month</h2><small>By minutes played</small></div><div class="au-shelf">${d.top.map(s => tile(s, 'top'))}</div>` : ''}
         <div class="au-h2"><h2>New on Audius</h2></div>
         ${d.latest.length ? html`<div class="au-shelf">${d.latest.map(s => tile(s, 'latest'))}</div>` : html`<p class="muted">Artists are adding their songs now.</p>`}
-        ${d.artists.length ? html`<div class="au-h2"><h2>Artists</h2></div><div class="au-shelf">${dedupeArtists(d).map(a => html`<a class="au-tile round" href="#/listen/artist/${a.owner}">${art(a.name)}<b>${a.name}</b></a>`)}</div>` : ''}`
+        ${d.artists.length ? html`<div class="au-h2"><h2>Artists</h2></div><div class="au-shelf">${dedupeArtists(d).map(a => html`<a class="au-tile round" href="#/listen/artist/${a.owner}">${art(a.name)}<b>${a.name}</b></a>`)}</div>` : ''}
+        ${openShelf(lists.open)}`
       : chip === 'presales' ? html`${(h.presales || []).length ? h.presales.map(p => presaleCard(p)) : html`<div class="au-empty"><h2>No presales right now</h2><p>Follow artists and they'll show up here first.</p></div>`}`
       : chip === 'owned' ? (user ? html`${lib0?.owned.length ? html`<div class="au-rows">${lib0.owned.map(s => songRow(s, 'owned', `${s.artist_credit} · Yours forever`))}</div>` : html`<div class="au-empty"><h2>Nothing owned yet</h2><p>Tap “Own it” on any song. It stays yours, even if you cancel.</p></div>`}` : signInCard('Songs you own', 'Sign in to see them.'))
       : (user ? html`${lib0?.following.length ? html`<div class="au-rows">${lib0.following.map(f => html`<a class="au-row" href="#/listen/artist/${f.owner_id}">${art(f.name, null, 'round')}<div class="t"><b>${f.name}</b><small>Artist</small></div></a>`)}</div>` : html`<div class="au-empty"><h2>Not following anyone yet</h2><p>Follow artists for presales, drops and their One Link.</p></div>`}` : signInCard('Following', 'Sign in to follow artists.'))}`.s;
   };
+  const lists = { top: d.top, latest: d.latest, owned: [], open: [] };
   await paint();
-  const lists = { top: d.top, latest: d.latest, owned: [] };
+  // Trending on the Open Audio Protocol, when the network can be reached. Fills in without moving anything above it.
+  api('/api/listen/open/trending').then(r => { lists.open = r.songs || []; if (lists.open.length && chip === 'music' && main.isConnected) paint(); }).catch(() => {});
   on(main, 'click', '[data-chip]', async (e, t) => { chip = t.dataset.chip; await paint(); lists.owned = (await lib())?.owned || []; });
   on(main, 'click', '[data-mix]', (e, t) => {
     const m = t.dataset.mix;
@@ -417,10 +436,11 @@ app.route('/listen/search', async ({ el, query }) => {
         <div class="big">Bring your music with you.</div><div class="muted small">See which of your artists are already here, and invite the rest.</div></a>`.s;
       return;
     }
-    const d = await api(`/api/listen/search?q=${encodeURIComponent(q)}`);
-    lists = { r: d.songs };
+    const [d, oa] = await Promise.all([api(`/api/listen/search?q=${encodeURIComponent(q)}`), api(`/api/listen/open/search?q=${encodeURIComponent(q)}`).catch(() => ({ songs: [] }))]);
+    lists = { r: d.songs, o: oa.songs };
     box.innerHTML = html`${d.artists.length ? html`<div class="au-h2" style="margin-top:8px"><h2>Artists</h2></div><div class="au-rows">${d.artists.map(a => html`<a class="au-row" href="#/listen/artist/${a.id}">${art(a.name, null, 'round')}<div class="t"><b>${a.name}</b><small>Artist</small></div></a>`)}</div>` : ''}
       ${d.songs.length ? html`<div class="au-h2" style="margin-top:8px"><h2>Songs</h2></div><div class="au-rows">${d.songs.map(s => songRow(s, 'r'))}</div>` : ''}
+      ${oa.songs.length ? html`<div class="au-h2" style="margin-top:8px"><h2>On the Open Audio Protocol</h2><small>Free to play · not on your receipt yet</small></div><div class="au-rows">${oa.songs.slice(0, 8).map(s => songRow(s, 'o', `${s.artist_credit} · Open Audio`))}</div>` : ''}
       ${!d.artists.length && !d.songs.length ? html`<div class="au-empty"><h2>Not here yet</h2><p>Invite them: when an artist joins, their passport makes sure everyone on the song gets paid.</p><button class="au-pill" data-invite="${q}">Invite ${q}</button></div>` : ''}`.s;
   };
   await run(query.get('q') || '');
@@ -428,7 +448,7 @@ app.route('/listen/search', async ({ el, query }) => {
   on(main, 'input', 'input[name=q]', (e, t) => { clearTimeout(tm); tm = setTimeout(() => run(t.value.trim()), 220); });
   on(main, 'submit', '[data-q]', e => e.preventDefault());
   on(main, 'click', '[data-invite]', (e, t) => copyText(inviteText(t.dataset.invite), 'Invite copied. Send it to them anywhere.'));
-  on(main, 'click', '[data-play]', (e, t) => { const i = (lists.r || []).findIndex(x => x.id === t.dataset.play); if (i >= 0) playList(lists.r, i); });
+  on(main, 'click', '[data-play]', (e, t) => { const l = lists[t.dataset.list] || []; const i = l.findIndex(x => x.id === t.dataset.play); if (i >= 0) playList(l, i); });
 }, { public: true, title: 'Search · Audius' });
 const inviteText = name => `${name}, I want to listen to you on Audius. My money goes only to the artists I play, and a signed Song Passport makes sure everyone on the song gets paid. Start here: ${location.origin}/#/home?artist=1`;
 
@@ -439,15 +459,20 @@ app.route('/listen/library', async ({ el, user, query }) => {
   if (!user) { main.innerHTML = signInCard('Your library', 'Liked songs, songs you own, Artist Passes and the artists you follow.').s; on(main, 'click', '[data-signin]', signIn); return; }
   const d = await lib();
   const lists = { liked: d.liked, owned: d.owned, played: d.played };
+  let keys = null;
   const paint = () => {
-    main.innerHTML = html`<div class="au-head"><h1 style="font-size:28px;font-weight:800;letter-spacing:-0.02em">Your library</h1></div>
-      <div class="au-chips">${[['all', 'All'], ['liked', 'Liked'], ['owned', 'Owned'], ['passes', 'Passes'], ['following', 'Following']].map(([k, l]) => html`<button class="au-chip ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`)}</div>
+    main.innerHTML = html`<div class="au-head"><h1 style="font-size:28px;font-weight:800;letter-spacing:-0.02em">Your library</h1><button class="au-ib" data-newpl aria-label="New playlist" title="New playlist">${I('plus')}</button></div>
+      <div class="au-chips">${[['all', 'All'], ['playlists', 'Playlists'], ['liked', 'Liked'], ['owned', 'Owned'], ['passes', 'Passes'], ['keys', 'Keys'], ['following', 'Following']].map(([k, l]) => html`<button class="au-chip ${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`)}</div>
       ${tab === 'all' ? html`<div class="au-rows">
           <button class="au-row" data-tab="liked"><div class="ico" style="background:#7E1BCC;color:#fff">${I('heart')}</div><div class="t"><b>Liked songs</b><small>${d.liked.length} ${d.liked.length === 1 ? 'song' : 'songs'}</small></div></button>
           <button class="au-row" data-tab="owned"><div class="ico">${I('download')}</div><div class="t"><b>Songs I own</b><small>${d.owned.length} · yours forever</small></div></button>
+          ${(d.playlists || []).map(plRow)}
           ${d.passes.map(p => html`<a class="au-row" href="#/listen/artist/${p.owner_id}">${art(p.name, null, 'round')}<div class="t"><b>${p.name}</b><small>Artist Pass${p.key ? ` · ${p.key}` : ''}</small></div></a>`)}
           ${d.following.map(f => html`<a class="au-row" href="#/listen/artist/${f.owner_id}">${art(f.name, null, 'round')}<div class="t"><b>${f.name}</b><small>Artist</small></div></a>`)}</div>
         ${d.played.length ? html`<div class="au-h2"><h2>Recently played</h2></div><div class="au-rows">${d.played.slice(0, 12).map(s => songRow(s, 'played'))}</div>` : ''}`
+      : tab === 'playlists' ? html`<div class="au-rows"><button class="au-row" data-newpl><div class="ico">${I('plus')}</div><div class="t"><b>New playlist</b><small>Add songs from anywhere with the + button</small></div></button>${(d.playlists || []).map(plRow)}</div>`
+      : tab === 'keys' ? (keys === null ? '' : keys.length ? html`<div class="au-rows">${keys.map(k => html`<a class="au-row" href="#/l/${k.page.handle}">${art(k.page.name, k.page.avatar_url, 'round')}<div class="t"><b>${k.page.name}</b><small>${k.name || 'Listener'}${k.orders ? ` · ${k.orders} ${k.orders === 1 ? 'order' : 'orders'}` : ''}</small></div>${I('key', 'width:18px;height:18px;color:#C98BFF')}</a>`)}</div>`
+          : html`<div class="au-empty"><h2>No Listener Keys yet</h2><p>Own a song, tip, or get an Artist Pass from an artist with a One Link page, and you get their Key: presales and early drops first.</p></div>`)
       : tab === 'liked' ? (d.liked.length ? html`<div class="au-rows">${d.liked.map(s => songRow(s, 'liked'))}</div>` : html`<div class="au-empty"><h2>No liked songs yet</h2><p>Tap the heart on anything you play.</p></div>`)
       : tab === 'owned' ? (d.owned.length ? html`<div class="au-rows">${d.owned.map(s => songRow(s, 'owned', `${s.artist_credit} · Yours forever`))}</div>` : html`<div class="au-empty"><h2>Nothing owned yet</h2><p>Tap “Own it” on any song. It stays yours, even if you cancel.</p></div>`)
       : tab === 'passes' ? (d.passes.length ? html`<div class="au-rows">${d.passes.map(p => html`<a class="au-row" href="#/listen/artist/${p.owner_id}">${art(p.name, null, 'round')}<div class="t"><b>${p.name}</b><small>Renews ${new Date(p.renews_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${p.key ? ` · ${p.key}` : ''}</small></div></a>`)}</div>` : html`<div class="au-empty"><h2>No Artist Passes</h2><p>${money(300)} a month backs one artist. All of it goes to them and their collaborators.</p></div>`)
@@ -455,9 +480,98 @@ app.route('/listen/library', async ({ el, user, query }) => {
       <a class="au-card" href="#/listen/switch" style="margin-top:6px"><div class="lbl"><span>Bring your music</span>${I('right', 'width:18px;height:18px')}</div><div class="muted small">Move your liked songs from another app, and invite the artists who aren't here yet.</div></a>`.s;
   };
   paint();
-  on(main, 'click', '[data-tab]', (e, t) => { tab = t.dataset.tab; paint(); });
+  on(main, 'click', '[data-tab]', async (e, t) => {
+    tab = t.dataset.tab; paint();
+    if (tab === 'keys' && keys === null) { keys = (await api('/api/key').catch(() => ({ keys: [] }))).keys || []; if (tab === 'keys') paint(); }
+  });
+  if (tab === 'keys') { keys = (await api('/api/key').catch(() => ({ keys: [] }))).keys || []; paint(); }
+  on(main, 'click', '[data-newpl]', async () => { const p = await newPlaylist(); if (p) app.go(`/listen/playlist/${p.id}`); });
   wireLists(main, lists);
 }, { public: true, title: 'Library · Audius' });
+
+// ---------- Playlists ----------
+const plSub = p => `Playlist · ${p.count} ${p.count === 1 ? 'song' : 'songs'}${p.source && p.source !== 'here' ? ` · from ${({ spotify: 'Spotify', apple: 'Apple Music', youtube: 'YouTube' })[p.source] || 'a file'}` : ''}`;
+const plCover = (p, cls = '') => p.cover?.length >= 4
+  ? html`<div class="au-art au-mosaic ${cls}">${p.cover.slice(0, 4).map(c => songArt(c))}</div>`
+  : p.cover?.length ? songArt(p.cover[0], cls) : art(p.name, null, cls);
+const plRow = p => html`<a class="au-row" href="#/listen/playlist/${p.id}">${plCover(p)}<div class="t"><b>${p.name}</b><small>${plSub(p)}</small></div></a>`;
+async function newPlaylist(songIds = []) {
+  if (!app.user) { signIn(); return null; }
+  return sheet((el, close) => {
+    darkSheet(el);
+    el.innerHTML = html`<form class="stack" style="gap:14px" data-f><h2>New playlist</h2>
+      <input class="au-input" name="name" maxlength="100" placeholder="Name it" autocomplete="off" required>
+      <button class="au-btn block">Create</button></form>`.s;
+    el.querySelector('input').focus();
+    on(el, 'submit', '[data-f]', async (e, f) => {
+      e.preventDefault();
+      const name = f.name.value.trim();
+      if (!name) return;
+      const r = await api.post('/api/listen/playlists', { name, song_ids: songIds });
+      LIB = null; toast(songIds.length ? `Added to ${name}` : `Made ${name}`); close(r.playlist);
+    });
+  });
+}
+// The + button anywhere: pick a playlist for this song, or start a new one with it.
+async function addToPlaylist(s) {
+  if (!app.user) return signIn();
+  const { playlists } = await api('/api/listen/playlists');
+  sheet((el, close) => {
+    darkSheet(el);
+    el.innerHTML = html`<div class="stack" style="gap:12px"><h2>Add to a playlist</h2><p class="muted" style="margin:0">${s.title} · ${s.artist_credit}</p>
+      <div class="au-rows"><button class="au-row" data-new><div class="ico">${I('plus')}</div><div class="t"><b>New playlist</b></div></button>
+      ${playlists.map(p => html`<button class="au-row" data-pl="${p.id}">${plCover(p)}<div class="t"><b>${p.name}</b><small>${plSub(p)}</small></div></button>`)}</div></div>`.s;
+    on(el, 'click', '[data-new]', async () => { close(); await newPlaylist([s.id]); });
+    on(el, 'click', '[data-pl]', async (e, b) => {
+      const p = playlists.find(x => x.id === b.dataset.pl);
+      await api.put(`/api/listen/playlists/${p.id}/songs/${s.id}`);
+      LIB = null; close(); toast(`Added to ${p.name}`);
+    });
+  });
+}
+app.route('/listen/playlist/:id', async ({ el, params, user }) => {
+  if (!user) { const main = shell(el, '/listen/library', ''); main.innerHTML = signInCard('Your playlists', 'Sign in to make playlists and bring yours over.').s; on(main, 'click', '[data-signin]', signIn); return; }
+  let d = await api(`/api/listen/playlists/${params.id}`);
+  let editing = false;
+  const main = shell(el, '/listen/library', '');
+  const mins = ms => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+  const paint = () => {
+    const p = d.playlist, tracks = d.songs;
+    main.innerHTML = html`<div class="au-album-top">${plCover(p)}
+        <div style="min-width:0"><div class="k">Playlist${p.source && p.source !== 'here' ? ` · from ${({ spotify: 'Spotify', apple: 'Apple Music', youtube: 'YouTube' })[p.source] || 'a file'}` : ''}</div><h1>${p.name}</h1>
+          <div class="by">${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}${p.duration_ms ? ` · ${mins(p.duration_ms)}` : ''}</div></div></div>
+      <div class="au-album-acts">${tracks.length ? html`<button class="au-play" data-playall aria-label="Play">${I('play', 'width:26px;height:26px')}</button>
+        <button class="au-ib mut" data-shuf aria-label="Shuffle">${I('shuffle')}</button>` : ''}
+        <button class="au-pill ghost" data-edit>${editing ? 'Done' : 'Edit'}</button>
+        ${editing ? html`<button class="au-pill ghost" data-rename>Rename</button><button class="au-pill ghost" data-del style="color:#FF6B6B">Delete</button>` : ''}</div>
+      ${tracks.length ? (editing
+        ? html`<div class="au-rows">${tracks.map((t, i) => html`<div class="au-row au-edit">${songArt(t)}<div class="t"><b>${t.title}</b><small>${t.artist_credit}</small></div>
+            <button class="au-ib" data-upi="${i}" ${i ? '' : 'disabled'} aria-label="Move up">${I('up')}</button>
+            <button class="au-ib" data-rm="${t.id}" aria-label="Remove from playlist">${I('x')}</button></div>`)}</div>`
+        : tracksTable(tracks))
+        : html`<div class="au-empty"><h2>Nothing here yet</h2><p>Tap + on any song to add it.</p><a class="au-btn" href="#/listen/search">Find songs</a></div>`}`.s;
+  };
+  paint();
+  wireLists(main, { tracks: d.songs });
+  const save = async body => { d = await api.patch(`/api/listen/playlists/${params.id}`, body); LIB = null; paint(); };
+  on(main, 'click', '[data-playall]', () => playList(d.songs, 0));
+  on(main, 'click', '[data-shuf]', () => { const q = [...d.songs].sort(() => Math.random() - 0.5); playList(q, 0); });
+  on(main, 'click', '[data-buy]', async (e, t) => { e.stopPropagation(); const s = d.songs.find(x => x.id === t.dataset.buy); if (await buySheet(s, 'own')) { d = await api(`/api/listen/playlists/${params.id}`); paint(); } });
+  on(main, 'click', '[data-edit]', () => { editing = !editing; paint(); });
+  on(main, 'click', '[data-upi]', (e, t) => { const i = +t.dataset.upi, ids = d.songs.map(s => s.id); [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]]; save({ song_ids: ids }); });
+  on(main, 'click', '[data-rm]', (e, t) => save({ song_ids: d.songs.map(s => s.id).filter(x => x !== t.dataset.rm) }));
+  on(main, 'click', '[data-rename]', () => sheet((sh, close) => {
+    darkSheet(sh);
+    sh.innerHTML = html`<form class="stack" style="gap:14px" data-f><h2>Rename</h2><input class="au-input" name="name" maxlength="100" value="${d.playlist.name}" required><button class="au-btn block">Save</button></form>`.s;
+    on(sh, 'submit', '[data-f]', async (e, f) => { e.preventDefault(); close(); await save({ name: f.name.value.trim() }); });
+  }));
+  on(main, 'click', '[data-del]', () => sheet((sh, close) => {
+    darkSheet(sh);
+    sh.innerHTML = html`<div class="stack" style="gap:14px"><h2>Delete ${d.playlist.name}?</h2><p class="muted" style="margin:0">The songs stay in your library. This can't be undone.</p>
+      <button class="au-btn block" data-yes style="background:#C0392B">Delete playlist</button></div>`.s;
+    on(sh, 'click', '[data-yes]', async () => { await api.del(`/api/listen/playlists/${params.id}`); LIB = null; close(); toast('Playlist deleted'); app.go('/listen/library?tab=playlists'); });
+  }));
+}, { public: true, title: 'Playlist · Audius' });
 
 // ---------- Now playing ----------
 app.route('/listen/now', async ({ el }) => {
@@ -467,6 +581,18 @@ app.route('/listen/now', async ({ el }) => {
     if (!s) {
       main.innerHTML = html`<div class="au-now"><div class="top"><a class="au-ib" href="#/listen" aria-label="Close player">${I('down')}</a></div>
         <div class="au-empty"><h2>Nothing playing</h2><p>Press Shuffle and we'll pick for you.</p><button class="au-btn" data-shufflenow>${I('shuffle')} Shuffle</button></div></div>`.s;
+      return;
+    }
+    if (s.open_audio) {
+      main.innerHTML = html`<div class="au-now-wrap"><div class="au-now"><div class="top"><a class="au-ib" href="#/listen" aria-label="Close player">${I('down')}</a><span>Open Audio Protocol</span><span style="width:44px"></span></div>
+        ${songArt(s, 'cover')}
+        <div class="ttl"><div style="min-width:0"><h1>${s.title}</h1><span class="muted">${s.artist_credit}</span></div></div>
+        <div class="au-scrub"><div class="track"><i data-prog style="width:${Math.min(100, P.pos / (P.dur || 1) * 100)}%"></i></div><div class="times"><span data-pos>${mmss(P.pos)}</span><span data-dur>${mmss(P.dur)}</span></div></div>
+        <div class="au-ctl"><span style="width:44px"></span>
+          <button class="au-ib" data-prevnow aria-label="Previous">${I('prev', 'width:30px;height:30px')}</button>
+          <button class="au-pp" data-ppnow aria-label="${P.playing ? 'Pause' : 'Play'}" style="color:#14213F">${I(P.playing ? 'pause' : 'play', 'width:28px;height:28px;stroke-width:2.6')}</button>
+          <button class="au-ib" data-nextnow aria-label="Next">${I('next', 'width:30px;height:30px')}</button><span style="width:44px"></span></div>
+        <div class="au-np-open">${openAudioBox(s, { head: false })}</div></div></div>`.s;
       return;
     }
     const c = hue((s.title || '') + (s.artist_credit || ''));
@@ -490,6 +616,7 @@ app.route('/listen/now', async ({ el }) => {
       <div class="au-acts">
         ${owned ? html`<button class="au-act" disabled>${I('check')}You own it</button>` : html`<button class="au-act main" data-own>${I('download')}Own it · ${money(s.price || 129)}</button>`}
         <button class="au-act" data-tipnow>${I('dollar')}Tip</button>
+        <button class="au-act" data-addnow>${I('addlist')}Add</button>
         <a class="au-act" href="#/listen/artist/${s.owner_id}">${I('bag')}Merch</a></div>
       ${people.length ? html`<button class="au-made" data-credits><div class="au-faces">${people.slice(0, 3).map(p => html`<span style="background:${hue(p.name)}">${initials(p.name)}</span>`)}</div>
         <div class="t"><b>${people.length} ${people.length === 1 ? 'person' : 'people'} made this. All get paid.</b><small>Signed Song Passport · tap for credits</small></div>${I('right', 'width:18px;height:18px')}</button>` : ''}
@@ -505,6 +632,7 @@ app.route('/listen/now', async ({ el }) => {
   on(main, 'click', '[data-likenow]', (e, t) => like(P.song, t));
   on(main, 'click', '[data-own]', () => buySheet(P.song, 'own'));
   on(main, 'click', '[data-tipnow]', () => buySheet(P.song, 'tip'));
+  on(main, 'click', '[data-addnow]', () => P.song && addToPlaylist(P.song));
   on(main, 'click', '[data-credits]', () => P.d && creditsSheet(P.d));
   on(main, 'click', '[data-device]', () => toast('Playing on this device. More devices come with the apps.'));
 }, { public: true, title: 'Now playing · Audius' });
@@ -543,9 +671,10 @@ app.route('/listen/receipt', async ({ el, user, query }) => {
           <div class="sub">${top.minutes} minutes. ${money(top.amount)} of your money, split between the ${top.split?.length || 1} ${top.split?.length === 1 ? 'person' : 'people'} on the songs you played.</div></div>
         <div class="au-paper">${(top.split?.length ? top.split : [{ name: top.name, amount: top.amount, roles: [] }]).map(p => html`<div class="r"><div class="l"><span><b>${p.name}</b><small> · ${roleLine(p.roles) || 'Artist'}</small></span><strong>${money(p.amount)}</strong></div></div>`)}</div>
         ${foot()}`,
-      () => html`<div><div class="sub" style="margin:0 0 10px">Artists you never played</div><div class="huge">$0.00</div>
-          <div class="sub" style="margin-top:16px">On most services your money goes into one big pot and is split by everyone's plays. Here, it only follows you.</div></div>
-        <div class="fine" style="font-size:15px"><div><span>You listened</span><span>${d.minutes} minutes</span></div><div><span>Artists you played</span><span>${artists.length}</span></div><div><span>Ads you heard</span><span>0</span></div></div>
+      () => html`<div><div class="sub" style="margin:0 0 10px">You listened ${hm(d.minutes)} this month</div><div class="huge">${money(d.recordings)}</div>
+          <div class="sub" style="margin-top:16px">went to the ${artists.length} ${artists.length === 1 ? 'artist' : 'artists'} you played, and $0.00 to anyone you didn't. On most services your money goes into one big pot and is split by everyone's plays. Here, it only follows you.</div></div>
+        <div class="fine" style="font-size:15px"><div><span>You listened</span><span>${hm(d.minutes)}</span></div><div><span>Artists you played</span><span>${artists.length}</span></div><div><span>Ads you heard</span><span>0</span></div></div>
+        <button class="au-btn" data-compare style="align-self:flex-start;background:rgba(255,255,255,.14);color:#fff">How this compares</button>
         ${foot()}`,
       () => html`<div><h1>No ads. Ever.</h1><div class="sub">You paid ${money(d.paid)}. Here's all of it.</div></div>
         <div class="au-paper">
@@ -562,8 +691,29 @@ app.route('/listen/receipt', async ({ el, user, query }) => {
   paint();
   on(main, 'click', '[data-next]', () => { step = Math.min(STEPS - 1, step + 1); paint(); });
   on(main, 'click', '[data-artist]', (e, t) => splitSheet(artists[+t.dataset.artist]));
+  on(main, 'click', '[data-compare]', () => compareSheet(d));
   on(main, 'click', '[data-share]', () => copyText(`My ${mo} on Audius: ${money(d.recordings)} went to the ${artists.length} artists I played${top ? `, most to ${top.name}` : ''}. $0.00 to anyone I didn't. No ads.`, 'Copied. Paste it anywhere.'));
 }, { public: true, title: 'Your receipt · Audius' });
+const hm = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h} h ${m} m` : `${m} min`; };
+// What the same listening would likely send these artists on a pooled service, with the assumption in plain sight.
+// Pooled services pay per stream from one big pot; we assume about $0.004 a stream to the recording side and 3.5
+// minutes a stream. It's an estimate, so it says "about".
+const POOLED = { perStream: 0.4, minutesPerStream: 3.5 }; // cents
+function compareSheet(d) {
+  const streams = Math.round(d.minutes / POOLED.minutesPerStream);
+  const pooled = Math.round(streams * POOLED.perStream);
+  sheet(el => {
+    darkSheet(el);
+    el.innerHTML = html`<div class="stack" style="gap:14px">
+      <h2>How this compares</h2>
+      <div class="au-paper">
+        <div class="r"><div class="l"><span><b>Here, on Audius</b><small> · your money follows your listening</small></span><strong>${money(d.recordings)}</strong></div></div>
+        <div class="r"><div class="l"><span><b>On a pooled service, about</b><small> · one pot split by everyone's plays</small></span><strong>${money(pooled)}</strong></div></div>
+      </div>
+      <p class="muted small" style="margin:0">Today, a listener like you sends these artists about ${money(pooled)} a month under pooled payouts. The estimate assumes ${hm(d.minutes)} is about ${streams} streams (3.5 minutes each) at about $0.004 a stream to the recording side. Real rates vary by service, country and plan, so treat it as a guide.</p>
+    </div>`.s;
+  });
+}
 function splitSheet(a) {
   sheet(el => {
     darkSheet(el);
@@ -677,7 +827,8 @@ app.route('/listen/song/:id', async ({ el, params }) => {
         <div class="by"><a href="#/listen/artist/${s.owner_id}">${s.artist_credit}</a> · ${d.listeners} ${d.listeners === 1 ? 'listener' : 'listeners'}</div></div></div>
     <div class="au-album-acts"><button class="au-play" data-playall aria-label="Play">${I('play', 'width:26px;height:26px')}</button>
       ${s.owned ? html`<span class="au-pill done">${I('check', 'width:18px;height:18px;vertical-align:-4px')} You own it</span>` : html`<button class="au-pill" data-own>Own it · ${money(s.price || 129)}</button>`}
-      <button class="au-pill ghost" data-tip>Tip</button></div>
+      <button class="au-pill ghost" data-tip>Tip</button>
+      <button class="au-ib mut" data-addpl aria-label="Add to a playlist" title="Add to a playlist">${I('addlist')}</button></div>
     ${d.people.length ? html`<button class="au-made" data-credits style="background:#1A1A21"><div class="au-faces">${d.people.slice(0, 3).map(p => html`<span style="background:${hue(p.name)}">${initials(p.name)}</span>`)}</div>
       <div class="t"><b>${d.people.length} ${d.people.length === 1 ? 'person' : 'people'} made this. All get paid.</b><small>Signed Song Passport · tap for credits</small></div>${I('right', 'width:18px;height:18px')}</button>` : ''}
     <div class="au-h2"><h2>${d.more.length ? `More by ${s.artist_credit}` : 'Track'}</h2></div>
@@ -686,11 +837,12 @@ app.route('/listen/song/:id', async ({ el, params }) => {
   on(main, 'click', '[data-playall]', () => playList(tracks, 0));
   on(main, 'click', '[data-own]', async () => { if (await buySheet(s, 'own')) app.refresh(); });
   on(main, 'click', '[data-tip]', () => buySheet(s, 'tip'));
+  on(main, 'click', '[data-addpl]', () => addToPlaylist(s));
   on(main, 'click', '[data-credits]', () => creditsSheet(d));
   on(main, 'click', '[data-buy]', (e, t) => { e.stopPropagation(); buySheet(tracks.find(x => x.id === t.dataset.buy), 'own'); });
 }, { public: true, title: 'Song · Audius' });
 
-// ---------- Switch in one tap: bring your music, pick a plan, AI on or off ----------
+// ---------- Switch: bring your music from an export file, pick a plan, AI on or off ----------
 const SOURCES = {
   spotify: { name: 'Spotify', how: 'In Spotify: Account › Privacy › Download your data. When the email arrives, open the zip and pick YourLibrary.json or a Playlist file.' },
   apple: { name: 'Apple Music', how: 'At privacy.apple.com: Get a copy of your data › Apple Media Services. Open the zip and pick the Apple Music Library Tracks file.' },
@@ -715,8 +867,17 @@ function parseExport(text, filename) {
     if (typeof title === 'string' && typeof artist === 'string') { out.push({ title, artist }); return; }
     Object.values(v).forEach(walk);
   };
-  walk(JSON.parse(text));
+  const data = JSON.parse(text);
+  walk(data);
   return out;
+}
+// Spotify's Playlist files list each playlist by name: [{ name, items: [{ title, artist }] }].
+function parsePlaylists(text, filename) {
+  if (/\.csv$/i.test(filename) || !/^\s*[[{]/.test(text)) return [];
+  const data = JSON.parse(text);
+  const lists = Array.isArray(data?.playlists) ? data.playlists : [];
+  return lists.filter(l => l && typeof l.name === 'string').map(l => ({ name: l.name.slice(0, 100), items: parseExport(JSON.stringify(l.items || []), 'x.json') }))
+    .filter(l => l.items.length).slice(0, 200);
 }
 app.route('/listen/switch', switchPage, { public: true, title: 'Switch · Audius' });
 app.route('/listen/plans', switchPage, { public: true, title: 'Plans · Audius' });
@@ -737,11 +898,12 @@ async function switchPage({ el, user }) {
       <div class="au-card" style="gap:12px">
         <div class="row" style="gap:16px"><div class="au-ring" style="background:conic-gradient(#C98BFF 0 ${pct}%, #33333D ${pct}% 100%)"><span>${result ? `${pct}%` : I('upload', 'width:20px;height:20px')}</span></div>
           <div style="display:flex;flex-direction:column;gap:4px;min-width:0">${result
-            ? html`<b style="font-size:16px">${result.artistsHere.length} of your ${result.artistsTotal} artists are here</b><span class="muted small">${result.found} of ${result.songs.toLocaleString('en-US')} songs matched and saved to Liked songs.</span>`
+            ? html`<b style="font-size:16px">${result.artistsHere.length} of your ${result.artistsTotal} artists are here</b><span class="muted small">${result.found} of ${result.songs.toLocaleString('en-US')} songs matched and saved to Liked songs.${result.playlists?.length ? ` ${result.playlists.length} ${result.playlists.length === 1 ? 'playlist' : 'playlists'} came over with the songs that are here.` : ''}</span>`
             : html`<b style="font-size:16px">Upload your ${SOURCES[src].name} data</b><span class="muted small">${SOURCES[src].how}</span>`}</div></div>
-        ${result ? html`${result.artistsHere.length ? html`<div class="au-chips" style="margin:0;padding:0;flex-wrap:wrap">${result.artistsHere.slice(0, 12).map(a => html`<a class="au-chip" href="#/listen/artist/${a.owner_id}">${a.name}</a>`)}</div>` : ''}
+        ${result ? html`${result.playlists?.length ? html`<div class="au-rows">${result.playlists.slice(0, 6).map(p => html`<a class="au-row" href="#/listen/playlist/${p.id}"><div class="ico">${I('addlist')}</div><div class="t"><b>${p.name}</b><small>${p.songs} of ${p.total} songs here</small></div></a>`)}</div>` : ''}
+            ${result.artistsHere.length ? html`<div class="au-chips" style="margin:0;padding:0;flex-wrap:wrap">${result.artistsHere.slice(0, 12).map(a => html`<a class="au-chip" href="#/listen/artist/${a.owner_id}">${a.name}</a>`)}</div>` : ''}
             ${result.missing.length ? html`<div><div class="row between" style="margin-bottom:6px"><b>Not here yet</b><button class="au-pill" data-inviteall>Invite the rest</button></div>
-              ${result.missing.slice(0, 6).map(m => html`<div class="au-miss"><div class="t"><b>${m.name}</b><small>${m.songs} of your ${m.songs === 1 ? 'song' : 'songs'}</small></div><button class="au-pill ghost" data-invite="${m.name}">Invite</button></div>`)}
+              ${result.missing.slice(0, 6).map(m => html`<div class="au-miss"><div class="t"><b>${m.name}</b><small>${m.songs} of your songs</small></div><button class="au-pill ghost" data-invite="${m.name}">Invite</button></div>`)}
               ${result.missing.length > 6 ? html`<div class="muted small" style="margin-top:6px">and ${result.missing.length - 6} more</div>` : ''}</div>` : ''}`
           : html`<label class="au-pill ghost au-file" style="text-align:center">${user ? 'Choose the file' : 'Sign in to upload'}<input type="file" accept=".json,.csv,application/json,text/csv" data-file ${user ? '' : 'disabled'}></label>
             <div class="muted small">${src === 'spotify' ? 'Spotify only lets small test apps connect directly, so moving music works from your data file for now.' : 'Nothing leaves your device except song titles and artist names.'}</div>`}
@@ -766,10 +928,10 @@ async function switchPage({ el, user }) {
   on(main, 'change', '[data-file]', async (e, t) => {
     const f = t.files[0];
     if (!f) return;
-    let items;
-    try { items = parseExport(await f.text(), f.name); } catch { return toast('That file doesn’t look like a music export', { error: true }); }
+    let items, playlists;
+    try { const text = await f.text(); items = parseExport(text, f.name); playlists = parsePlaylists(text, f.name); } catch { return toast('That file doesn’t look like a music export', { error: true }); }
     if (!items.length) return toast(src === 'youtube' ? 'That file has no song titles and artists in it' : 'No songs found in that file', { error: true });
-    result = await api.post('/api/listen/import', { source: src, items: items.slice(0, 20000) });
+    result = await api.post('/api/listen/import', { source: src, items: items.slice(0, 20000), playlists });
     LIB = null; paint();
   });
   on(main, 'click', '[data-invite]', (e, t) => copyText(inviteText(t.dataset.invite), 'Invite copied. Send it to them anywhere.'));

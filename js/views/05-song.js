@@ -72,12 +72,12 @@ function passportCard(song, sp, merch, canManage, mlcState) {
   const signed = cur ? (cur.signatures || []).length || lines.length : 0;
   const sealed = cur?.executed_at ? new Date(cur.executed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
   return html`<section class="card card-pad" style="margin-bottom:16px" aria-labelledby="pp-h">
-    <div class="row" style="justify-content:space-between;margin-bottom:14px"><h2 class="h3" id="pp-h">Who gets paid</h2><span class="quiet small">${key === 'master_bps' ? 'Recording' : 'Songwriting'} split</span></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:14px"><h2 class="h3" id="pp-h">Who gets paid</h2><span class="quiet small">${key === 'master_bps' ? 'Share of master income' : 'Share of songwriting income'}</span></div>
     <div class="pp-ring">
       <svg class="ring" viewBox="0 0 132 132" role="img" aria-label="Split adds up to ${pc(total)}"><circle cx="66" cy="66" r="${R}" fill="none" stroke="var(--surface-3)" stroke-width="16"/>${arcs}
         <text x="66" y="64" text-anchor="middle" font-size="22" font-weight="800" fill="currentColor">${pc(total)}</text><text x="66" y="84" text-anchor="middle" font-size="11" fill="var(--muted)">${total === 10000 ? 'adds up' : 'so far'}</text></svg>
       <div class="pp-people">${lines.filter(l => l[key] > 0).map((l, i) => html`<div class="pp-person"><span class="dot" style="background:${SPLIT_COLORS[i % SPLIT_COLORS.length]}"></span>
-        <div class="grow"><div class="n">${l.name}</div><div class="r">${(Array.isArray(l.roles) ? l.roles : []).join(', ')}${key === 'master_bps' && l.publishing_bps ? ` · ${pc(l.publishing_bps)} songwriting` : ''}</div></div><span class="pc">${pc(l[key])}</span></div>`)}</div>
+        <div class="grow"><div class="n">${l.name}</div><div class="r">${(Array.isArray(l.roles) ? l.roles : []).join(', ')}${key === 'master_bps' && l.publishing_bps ? ` · ${pc(l.publishing_bps)} of songwriting income` : ''}</div></div><span class="pc">${pc(l[key])}</span></div>`)}</div>
     </div>
     ${cur ? html`<div class="pp-seal">${icon('check')} Signed by all ${signed}${sealed ? ` · sealed ${sealed}` : ''}<a href="#/certificate/${cur.id}">Certificate</a></div>`
       : html`<div class="pp-note">Waiting on signatures. Money that arrives is held until everyone agrees.</div>`}
@@ -191,6 +191,7 @@ app.songTab({
       </div>
     </div>`.s;
     en?.mount(el, song, { st, reload });
+    if (canManage) aiFlagBanner(el, song);
 
     on(el, 'click', '[data-act=copy]', async (e, b) => {
       try { await navigator.clipboard.writeText(b.dataset.value); toast(`${b.querySelector('.code-k').textContent} copied`); } catch { prompt('Copy', b.dataset.value); }
@@ -291,4 +292,28 @@ function describe(e) {
   if (e.type === 'registration.updated') return html`<div class="small">${p.org}: ${p.status}${p.reference ? ` (${p.reference})` : ''}</div>`;
   if (p.summary) return html`<div class="small">${p.summary}</div>`;
   return '';
+}
+
+// AI flag: only the song's managers see why it was flagged, and can appeal once. Shown above the passport.
+async function aiFlagBanner(el, song) {
+  const { flag } = await api(`/api/songs/${song.id}/ai-flag`).catch(() => ({}));
+  if (!flag || !['flagged', 'appealed', 'upheld'].includes(flag.status) || !el.isConnected) return;
+  el.querySelector('#ai-flag')?.remove();
+  const box = document.createElement('div');
+  box.id = 'ai-flag';
+  box.className = 'callout warn';
+  box.style.marginBottom = '16px';
+  box.innerHTML = html`${icon('flag')}<div class="grow"><b>This song is marked as AI-made</b>
+    <div class="small">${flag.reason || ''}${flag.status === 'appealed' ? ' · Your appeal is being reviewed.' : flag.status === 'upheld' ? ' · Your appeal was reviewed and the mark stays.' : ' · Listeners who turned off AI music won\'t hear it.'}</div></div>
+    ${flag.status === 'flagged' ? html`<button class="btn btn-sm" data-act="ai-appeal">Appeal</button>` : ''}`.s;
+  el.prepend(box);
+  box.querySelector('[data-act=ai-appeal]')?.addEventListener('click', () => modal({
+    title: 'Appeal the AI mark',
+    body: html`<p class="muted">Tell us how the song was made: who played, sang and produced it. Links to session files or videos help. Someone reviews every appeal.</p>
+      <label class="field"><span>Your appeal</span><textarea class="input" name="message" rows="5" required></textarea></label>`,
+    actions: [{ label: 'Cancel' }, { label: 'Send appeal', primary: true, onClick: async (close, m) => {
+      await api.post(`/api/songs/${song.id}/ai-appeal`, { message: m.querySelector('[name=message]').value });
+      toast('Appeal sent'); aiFlagBanner(el, song);
+    } }]
+  }));
 }

@@ -85,7 +85,7 @@ window.fetch = async (input, init = {}) => {
     return reply(next);
   }
   if (SAFE.test(url.pathname)) return json(200, { ok: true });
-  return json(409, { error: 'This is a demo with sample data, so nothing is saved. Try “Send a split” or “Agree and sign” from the tour.' });
+  return json(409, { error: cfg.refuse || 'This is a demo with sample data, so nothing is saved. Try “Send a split” or “Agree and sign” from the tour.' });
 };
 
 // The player streams a short generated loop.
@@ -104,7 +104,7 @@ const bar = document.getElementById('demo-bar');
 bar.innerHTML = `
   <div class="db-in">
     <span class="db-tag">Demo</span>
-    <span class="db-note">Sample data. Nothing you do is saved.</span>
+    <span class="db-note">${esc(cfg.note || 'Sample data. Nothing you do is saved.')}</span>
     <div class="db-seg" role="group" aria-label="View the app as">
       ${Object.entries(cfg.modes).map(([k, m]) => `<button type="button" data-mode="${k}" aria-pressed="${k === mode}">${esc(m.label)}</button>`).join('')}
     </div>

@@ -16,7 +16,7 @@ function officialMoment(song, c) {
       <div class="eyebrow">Certificate of completion · v${c.version}</div>
       <div class="small muted">Sealed ${date(c.executed_at)}</div>
       <div class="stack-sm" style="margin-top:6px">${c.lines.map((l, i) => html`<div class="row between"><span class="row" style="gap:8px"><i style="width:9px;height:9px;border-radius:50%;background:${shareColors[i % shareColors.length]}"></i>${l.name}</span>
-        <span class="num small muted">${pct(l.master_bps)} master · ${pct(l.publishing_bps)} publishing</span></div>`)}</div>
+        <span class="num small muted">${pct(l.master_bps)} of master income · ${pct(l.publishing_bps)} publishing</span></div>`)}</div>
       <div class="row wrap" style="margin-top:10px"><a class="btn btn-primary" href="#/certificate/${c.id}">${icon('file')} View certificate</a><button class="btn" data-done>Done</button></div>
     </div></div>`.s;
   const close = () => { back.remove(); removeEventListener('keydown', onKey); };
@@ -295,7 +295,7 @@ app.songTab({
     const refresh = async () => { data = await api(`/api/songs/${song.id}/splits`); paint(); };
 
     // Editor state.
-    let lines = [], dirty = false, note = '';
+    let lines = [], dirty = false, note = '', masterOwner = '';
     const fromLines = src => src.map(l => ({ k: Math.random().toString(36).slice(2), contributor_id: l.contributor_id || null, payee_type: l.payee_type || 'contributor', payee_song_id: l.payee_song_id || null, name: l.name, email: l.email || '', roles: [...new Set((l.roles || []).map(r => LEGACY_ROLES[r] || r))], ipi: l.ipi || '', pro: l.pro || '', entity: l.entity === 'company' ? 'company' : 'person', administered_by: l.administered_by || '', access_code: !!l.access_code, m: bpsStr(l.master_bps), p: bpsStr(l.publishing_bps) }));
     const resetEditor = () => {
       const src = data.open?.lines?.length ? data.open.lines : data.current?.lines?.length ? data.current.lines
@@ -306,6 +306,7 @@ app.songTab({
         lines.forEach((l, i) => { l.m = bpsStr(eq[i]); l.p = bpsStr(eq[i]); });
       }
       note = data.open?.note || '';
+      masterOwner = data.open?.master_owner || data.current?.master_owner || '';
       dirty = false;
     };
     resetEditor();
@@ -335,7 +336,7 @@ app.songTab({
       const bl = barLines();
       const pool = (label, v, key) => html`<div class="sp-total ${v === 10000 ? 'ok' : v === 0 ? '' : 'bad'} stack-sm">
         <div class="row between"><span class="label">${label}</span><b>${pct(v)}</b></div>${bar(bl, key)}</div>`;
-      box.innerHTML = html`${pool('Master', t.m, 'master_bps')}${pool('Publishing', t.p, 'publishing_bps')}`.s;
+      box.innerHTML = html`${pool('Master income', t.m, 'master_bps')}${pool('Publishing', t.p, 'publishing_bps')}`.s;
       const prob = el.querySelector('#sp-problems');
       prob.innerHTML = t.ok ? html`<span class="badge ok">Ready to send</span>`.s : html`<span class="small" style="color:var(--crit)">${t.problems[0]}</span>`.s;
       el.querySelector('[data-act=save]').disabled = !t.ok || !dirty;
@@ -351,7 +352,7 @@ app.songTab({
       const out = data.open?.status === 'out_for_signature';
       return html`<div class="card" id="sp-editor">
         <div class="card-head"><div><h2 class="h3">${data.open ? `Split draft · version ${data.open.version}` : data.current ? 'Amend the split' : 'Set the split'}</h2>
-          <div class="small muted">Master is the recording, publishing is the composition. Each pool totals 100%, or leave a pool at 0%.</div></div>
+          <div class="small muted">Master shares are shares of the recording's income, not ownership of the recording. Publishing is the composition. Each pool totals 100%, or leave a pool at 0%.</div></div>
           <div class="seg" role="group" aria-label="Presets">
             <button data-preset="equal" title="Everyone gets the same share of both pools">${lines.length === 2 ? '50 / 50' : 'Equal split'}</button>
             <button data-preset="roles" title="Writers and publishers share publishing, performers and producers share master">By role</button>
@@ -359,7 +360,7 @@ app.songTab({
           </div></div>
         ${out ? html`<div class="callout warn" style="border-radius:0">${icon('alert')}<div>Version ${data.open.version} is out for signature. Saving changes voids the requests still waiting and starts version ${data.open.version + 1}. Anyone who already signed signs again.</div></div>` : ''}
         <div class="sp-lines">
-          <div class="sp-line head"><span>Contributor</span><span style="text-align:right">Master</span><span style="text-align:right">Publishing</span><span></span></div>
+          <div class="sp-line head"><span>Contributor</span><span style="text-align:right">Master income</span><span style="text-align:right">Publishing</span><span></span></div>
           ${lines.length ? lines.map((l, i) => html`<div class="sp-line" data-k="${l.k}">
             <div class="sp-who"><span class="sp-dot" style="background:${shareColors[i % shareColors.length]}"></span>
               ${l.payee_type === 'song' ? html`<div class="art" style="width:34px;height:34px;border-radius:9px;background:var(--grad)">${icon('git')}</div>` : avatar(l.name, 'sm')}
@@ -367,7 +368,7 @@ app.songTab({
                 <div class="s">${l.payee_type === 'song' ? 'Paid into that song · its owner signs' : html`${l.email || html`<span class="faint">No email: you'll copy their link</span>`}${l.entity === 'company' ? html` · <span class="sp-rolechip">company</span>` : ''}${l.access_code ? html` · ${icon('lock')}` : ''} · ${roleChips(l.roles)}`}</div></div>
               ${l.payee_type === 'contributor' ? html`<button class="btn btn-ghost btn-icon btn-sm" data-act="edit-line" title="Edit ${l.name}">${icon('edit')}</button>` : ''}
             </div>
-            <label class="sp-pct"><small>Master</small><input class="input" data-f="m" inputmode="decimal" value="${l.m}" aria-label="${l.name} master share"></label>
+            <label class="sp-pct"><small>Master</small><input class="input" data-f="m" inputmode="decimal" value="${l.m}" aria-label="${l.name} share of master income"></label>
             <label class="sp-pct"><small>Pub</small><input class="input" data-f="p" inputmode="decimal" value="${l.p}" aria-label="${l.name} publishing share"></label>
             <button class="btn btn-ghost btn-icon btn-sm btn-danger" data-act="rm-line" title="Remove">${icon('trash')}</button>
           </div>`) : html`<div class="empty" style="padding:30px"><div class="icon">${icon('users')}</div><h2 class="h3">No contributors yet</h2><p>Add everyone who wrote, produced, performed or owns a piece of this song.</p></div>`}
@@ -379,6 +380,7 @@ app.songTab({
         </div>
         <div class="sp-totals" id="sp-totals" style="border-radius:0"></div>
         <div style="padding:16px 22px" class="stack">
+          <label class="field"><span>Master owner <span class="hint">optional · who owns the recording itself; the shares above are income only</span></span><input class="input" data-f="master-owner" value="${masterOwner}" maxlength="160" placeholder="e.g. Nova Lane, or the label that owns the master"></label>
           <label class="field"><span>Note to signers <span class="hint">optional, shown on the split sheet</span></span><input class="input" data-f="note" value="${note}" maxlength="1000" placeholder="e.g. Final split agreed in the studio on 12 October"></label>
           <div class="row wrap between"><div id="sp-problems"></div>
             <div class="row wrap">${editing ? html`<button class="btn btn-ghost" data-act="cancel-edit">Cancel</button>` : ''}
@@ -412,9 +414,11 @@ app.songTab({
       return html`<div class="card">
         <div class="card-head"><div><h2 class="h3">Split in force</h2><div class="small muted">Version ${c.version} · fully signed ${date(c.executed_at)}</div></div><span class="seal" style="padding:5px 10px;font-size:12.5px">${icon('shield')} Sealed</span></div>
         <div class="card-body stack">
-          <div class="stack-sm"><div class="row between"><span class="label">Master</span></div>${bar(c.lines, 'master_bps')}${legend(c.lines, 'master_bps')}</div>
+          <div class="stack-sm"><div class="row between"><span class="label">Master income</span></div>${bar(c.lines, 'master_bps')}${legend(c.lines, 'master_bps')}</div>
           <div class="stack-sm"><div class="row between"><span class="label">Publishing</span></div>${bar(c.lines, 'publishing_bps')}${legend(c.lines, 'publishing_bps')}</div>
-          <div class="row wrap between" style="margin-top:4px"><div class="row wrap"><a class="btn btn-sm btn-dark" href="#/certificate/${c.id}">${icon('file')} Certificate</a>${canManage && !data.open ? html`<button class="btn btn-sm" data-act="edit">${icon('edit')} Amend</button>` : ''}</div>${anchorBadge(c.anchor)}</div>
+          <div class="row wrap between" style="margin-top:4px"><div class="row wrap"><a class="btn btn-sm btn-dark" href="#/certificate/${c.id}">${icon('file')} Certificate</a>${canManage && !data.open ? html`<button class="btn btn-sm" data-act="edit">${icon('edit')} Amend</button>` : ''}${canManage ? html`<button class="btn btn-sm" data-act="distributor" data-id="${c.id}">${icon('copy')} Copy to my distributor</button>` : ''}${canManage || data.isContributor ? html`<button class="btn btn-sm btn-ghost" data-act="dispute" data-id="${c.id}">${icon('flag')} Dispute a share</button>` : ''}</div>${anchorBadge(c.anchor)}</div>
+          <div id="sp-disputes"></div>
+          ${masterOwnerLine(c.master_owner)}
         </div></div>`;
     }
 
@@ -444,7 +448,42 @@ app.songTab({
         </div></div>`.s;
       if (showEditor) paintTotals();
       if (canManage && data.current) officialMoment(song, data.current);
+      if (data.current && (canManage || data.isContributor)) paintDisputes(data.current);
     }
+
+    // Open disputes on the split in force: only the disputed share is held; the song's owner settles it.
+    async function paintDisputes(c) {
+      const box = el.querySelector('#sp-disputes');
+      const { disputes } = await api(`/api/splits/${c.id}/disputes`).catch(() => ({ disputes: [] }));
+      const open = disputes.filter(d => d.status === 'open');
+      if (!box || !open.length) return;
+      box.innerHTML = html`${open.map(d => html`<div class="callout warn" style="margin-top:8px">${icon('flag')}<div style="flex:1"><b>${d.line_name}'s share is disputed</b>
+        <div class="small">“${d.reason}” · ${ago(d.created_at)}. New income for this share is held until it is settled; everyone else is paid as normal.</div>
+        ${canManage ? html`<button class="btn btn-sm" style="margin-top:8px" data-act="resolve-dispute" data-id="${d.id}">Mark settled</button>` : ''}</div></div>`)}`.s;
+    }
+    on(el, 'click', '[data-act=dispute]', async (e, t) => {
+      const c = data.current;
+      const r = await modal({
+        title: 'Dispute a share',
+        body: html`<div class="stack"><p class="muted small">Only the share you pick is held while it is sorted out. Everyone on the split is told, and everyone else keeps being paid.</p>
+          <label class="field"><span>Which share</span><select class="input" data-f="line">${c.lines.filter(l => l.payee_type === 'contributor').map(l => html`<option value="${l.id}">${l.name} · ${pct(l.master_bps)} / ${pct(l.publishing_bps)}</option>`)}</select></label>
+          <label class="field"><span>What is wrong</span><textarea class="input" data-f="reason" rows="3" maxlength="1000" placeholder="e.g. I co-wrote the hook, my publishing share should be 25%"></textarea></label></div>`,
+        actions: [{ label: 'Cancel', value: null }, { label: 'Send dispute', danger: true, onClick: async (close, m) => {
+          const reason = m.querySelector('[data-f=reason]').value.trim();
+          if (!reason) { toast('Say what is wrong', { error: true }); return false; }
+          await api.post(`/api/splits/${c.id}/dispute`, { line_id: m.querySelector('[data-f=line]').value, reason });
+          close(true);
+        } }]
+      });
+      if (r === true) { toast('Dispute sent. Everyone on the split was told.'); paint(); }
+    });
+    on(el, 'click', '[data-act=resolve-dispute]', async (e, t) => {
+      const ok = await confirmDialog('Mark this dispute settled?', 'Held money for this share is paid out through the split in force. If you agreed different shares, amend and sign the split first.', 'Mark settled');
+      if (!ok) return;
+      const r = await busy(t, () => api.post(`/api/disputes/${t.dataset.id}/resolve`, {}));
+      toast(r.released ? 'Settled. Held money was paid out.' : 'Settled');
+      paint();
+    });
     paint();
     // While a split is out for signature, check now and then, so the sender sees the moment the last person agrees.
     const poll = setInterval(async () => {
@@ -456,7 +495,25 @@ app.songTab({
 
     const lineOf = t => lines.find(l => l.k === t.closest('.sp-line').dataset.k);
     on(el, 'input', '.sp-pct input', (e, t) => { lineOf(t)[t.dataset.f] = t.value; dirty = true; paintTotals(); });
+    // DistroKid, TuneCore and CD Baby each ask for the same thing: collaborator, email, percent of earnings.
+    on(el, 'click', '[data-act=distributor]', async (e, t) => {
+      const x = await busy(t, () => api(`/api/splits/${t.dataset.id}/distributor`));
+      const tsv = x.rows.map(r => [r.name, r.email || '', r.percent + '%'].join('\t')).join('\n');
+      await modal({
+        title: 'Copy to my distributor',
+        body: html`<div class="stack"><p class="muted small">Paste these into your distributor's splits screen (DistroKid "Splits", TuneCore "Splits", CD Baby "Split payments"). ${x.note}</p>
+          <table class="sp-table"><thead><tr><th>Collaborator</th><th>Email</th><th class="r">Percent</th></tr></thead><tbody>
+            ${x.rows.map(r => html`<tr><td><b>${r.name}</b><div class="tiny muted">${r.role}</div></td><td class="small">${r.email || html`<span style="color:var(--crit)">Add an email</span>`}</td><td class="r">${r.percent}%</td></tr>`)}
+          </tbody></table>
+          ${x.missing_emails.length ? html`<div class="callout warn">${icon('alert')}<div class="small">Your distributor needs an email for ${x.missing_emails.join(', ')}.</div></div>` : ''}</div>`,
+        actions: [
+          { label: 'Download CSV', onClick: close => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([x.csv], { type: 'text/csv' })); a.download = `${x.song.title} splits.csv`; a.click(); close(); } },
+          { label: 'Copy', primary: true, onClick: async close => { try { await navigator.clipboard.writeText(tsv); toast('Splits copied'); } catch { toast('Copy did not work here. Use Download CSV.', { error: true }); } close(); } }
+        ]
+      });
+    });
     on(el, 'input', '[data-f=note]', (e, t) => { note = t.value; dirty = true; paintTotals(); });
+    on(el, 'input', '[data-f=master-owner]', (e, t) => { masterOwner = t.value; dirty = true; paintTotals(); });
     on(el, 'click', '[data-act=rm-line]', (e, t) => { const l = lineOf(t); lines = lines.filter(x => x !== l); dirty = true; paint(); });
     on(el, 'click', '[data-preset]', (e, t) => {
       if (!lines.length) return toast('Add contributors first', { error: true });
@@ -560,7 +617,7 @@ app.songTab({
     });
 
     async function save() {
-      const r = await api.put(`/api/songs/${song.id}/splits`, { lines: toPayload(), note });
+      const r = await api.put(`/api/songs/${song.id}/splits`, { lines: toPayload(), note, master_owner: masterOwner });
       if (r.voided) toast(`Version ${r.voided.version} voided. Draft is now version ${r.split.version}.`);
       editing = false;
       await refresh(); resetEditor(); paint();
@@ -580,7 +637,7 @@ app.songTab({
       });
       if (!ok) return;
       await busy(t, async () => {
-        if (dirty || !data.open || data.open.status !== 'draft') await api.put(`/api/songs/${song.id}/splits`, { lines: toPayload(), note });
+        if (dirty || !data.open || data.open.status !== 'draft') await api.put(`/api/songs/${song.id}/splits`, { lines: toPayload(), note, master_owner: masterOwner });
         const r = await api.post(`/api/songs/${song.id}/splits/send`, { sign_as_me: !!meLine });
         editing = false;
         const toCopy = r.links.filter(l => !l.you);
@@ -646,11 +703,11 @@ app.route('/sign/:token', async ({ el, params }) => {
         ${v.readOnly ? html`<div style="padding:0 22px 22px">${closedPanel(v)}</div>` : html`
         <div class="sp-yours">
           <div class="label">${s.company ? `${s.company}'s share` : s.on_behalf ? `For ${s.on_behalf.title}` : 'Your share'}</div>
-          ${sh.same ? html`<div class="sp-big">${pct(sh.m)}</div><div class="small muted">of the master and the publishing</div>`
-            : html`<div class="row" style="gap:26px;justify-content:center"><div><div class="sp-big sm">${pct(sh.m)}</div><div class="small muted">master</div></div><div><div class="sp-big sm">${pct(sh.p)}</div><div class="small muted">publishing</div></div></div>`}
+          ${sh.same ? html`<div class="sp-big">${pct(sh.m)}</div><div class="small muted">of master income and publishing</div>`
+            : html`<div class="row" style="gap:26px;justify-content:center"><div><div class="sp-big sm">${pct(sh.m)}</div><div class="small muted">of master income</div></div><div><div class="sp-big sm">${pct(sh.p)}</div><div class="small muted">publishing</div></div></div>`}
         </div>
         ${others.length ? html`<div class="sp-others">${others.map((l, i) => { const o = shareOf([l]); return html`<div class="sp-other"><span class="avatar sp-av" style="background:${inkColor(shareColors[(i + 1) % shareColors.length])}" aria-hidden="true">${initials(l.name)}</span><span class="grow">${l.name}${l.entity === 'company' ? html` <span class="faint small">company</span>` : ''}</span><b class="num">${o.same ? pct(o.m) : `${pct(o.m)} / ${pct(o.p)}`}</b></div>`; })}
-          <div class="tiny muted" style="margin-top:6px">${signedCount} of ${v.signers.length} agreed${!sh.same || others.some(l => l.master_bps !== l.publishing_bps) ? ' · master / publishing' : ''}</div></div>` : ''}
+          <div class="tiny muted" style="margin-top:6px">${signedCount} of ${v.signers.length} agreed${!sh.same || others.some(l => l.master_bps !== l.publishing_bps) ? ' · master income / publishing' : ''}</div></div>` : ''}
         <div class="sp-act">
           ${s.company ? html`<label class="field"><span>Your name <span class="hint">the person signing for ${s.company}</span></span><input class="input" data-f="person" autocomplete="name" value="${st.person}" placeholder="Full name"></label>` : ''}
           ${st.showName && !s.company ? html`<label class="field"><span>Your full name</span><input class="input" data-f="name" autocomplete="name" value="${st.name || s.name}"></label>` : ''}
@@ -765,12 +822,16 @@ app.route('/sign/:token', async ({ el, params }) => {
   paint();
 }, { public: true, title: 'Agree the splits' });
 
+// Who owns the recording, stated apart from the income shares (which this split is about).
+const masterOwnerLine = owner => owner ? html`<div class="small"><span class="muted">Master owner:</span> <b>${owner}</b> <span class="muted">· not changed by this split</span></div>` : '';
+
 function documentView(v) {
   return html`<div class="stack">
     <div><b>${v.song.title}</b> <span class="muted">· ${v.song.artist_credit}</span>
       <div class="row wrap" style="margin-top:6px">${v.song.isrc ? html`<span class="chip">ISRC ${v.song.isrc}</span>` : ''}${v.song.iswc ? html`<span class="chip">ISWC ${v.song.iswc}</span>` : ''}<span class="chip">Version ${v.split.version}</span></div></div>
     ${v.split.note ? html`<div class="callout">${icon('info')}<div class="small">${v.split.note}</div></div>` : ''}
-    <table class="sp-table"><thead><tr><th>Party</th><th class="r">Master</th><th class="r">Publishing</th></tr></thead><tbody>
+    ${masterOwnerLine(v.split.master_owner)}
+    <table class="sp-table"><thead><tr><th>Party</th><th class="r">Master income</th><th class="r">Publishing</th></tr></thead><tbody>
       ${v.lines.map(l => html`<tr class="${l.mine ? 'mine' : ''}"><td><div style="font-weight:600">${l.name}${l.mine ? html` <span class="badge accent plain">You</span>` : ''}</div>
         <div class="tiny muted">${[l.entity === 'company' ? 'Company' : '', ...(l.roles || [])].filter(Boolean).join(' · ')}${l.administered_by ? ` · administered by ${l.administered_by}` : ''}</div></td>
         <td class="r">${pct(l.master_bps)}</td><td class="r">${pct(l.publishing_bps)}</td></tr>`)}
@@ -872,11 +933,12 @@ app.route('/certificate/:id', async ({ el, params }) => {
       </div>
       ${c.status === 'superseded' && c.superseded_by ? html`<p class="small" style="margin-top:14px;color:#a86500">Replaced by <a href="#/certificate/${c.superseded_by.id}">version ${c.superseded_by.version}</a>. This record stays valid as history.</p>` : ''}
       <div class="rule"></div>
-      <table><thead><tr><th>Party</th><th>Roles</th><th class="r">Master</th><th class="r">Publishing</th></tr></thead><tbody>
+      <table><thead><tr><th>Party</th><th>Roles</th><th class="r">Master income</th><th class="r">Publishing</th></tr></thead><tbody>
         ${doc.lines.map(l => html`<tr><td class="serif" style="font-size:16px;font-weight:600">${l.name}${l.ipi || l.administered_by ? html`<div class="mono" style="font-size:11px;font-weight:400;color:#6b6b7b">${[l.ipi && `IPI ${l.ipi}`, l.pro, l.administered_by && `Administered by ${l.administered_by}`].filter(Boolean).join(' · ')}</div>` : ''}</td>
           <td class="small mut" style="text-transform:capitalize">${[l.entity === 'company' ? 'Company' : '', ...(l.roles || [])].filter(Boolean).join(', ') || '—'}</td><td class="r">${pct(l.master_bps)}</td><td class="r">${pct(l.publishing_bps)}</td></tr>`)}
         <tr><td colspan="2" class="lbl" style="border-bottom:0">Total</td><td class="r" style="border-bottom:0;font-weight:600">${pct(doc.totals?.master_bps)}</td><td class="r" style="border-bottom:0;font-weight:600">${pct(doc.totals?.publishing_bps)}</td></tr>
       </tbody></table>
+      <p class="small mut" style="margin-top:10px">Master shares are shares of the recording's income, not ownership of the recording.${doc.master_owner ? html` Master owner: <b>${doc.master_owner}</b> (not changed by this split).` : ''}</p>
       <div class="rule"></div>
       <div class="lbl" style="margin-bottom:18px">Signed by every party</div>
       <div class="sp-sigs">${c.signatures.map(s => html`<div class="sp-sigblock">
