@@ -162,7 +162,7 @@ app.songTab({
     <section class="card health" aria-labelledby="health-h">
       <div class="health-sum">${ring(done, counted.length)}<div><h2 class="h3" id="health-h">Registered where money is collected</h2><p class="quiet">${done === counted.length ? 'Everything is in place.' : `${counted.length - done} ${counted.length - done === 1 ? 'place' : 'places'} to check`}</p></div></div>
       <div class="tiles">${tiles.map(t => html`<button class="tile" data-act="tile" data-org="${t.org}" aria-label="${t.name}: ${STATE_TEXT[t.state]}">
-        <span class="tile-ic">${icon(t.ic)}</span><span class="tile-name">${t.name}</span><span class="sdot ${t.state}" aria-hidden="true"></span></button>`)}</div>
+        <span class="tile-ic">${icon(t.ic)}</span><span class="tile-name">${raw(esc(t.name).replace(/([a-z])([A-Z])/g, '$1<wbr>$2'))}</span><span class="sdot ${t.state}" aria-hidden="true"></span></button>`)}</div>
     </section>
     <div class="split-main">
       <div class="stack-lg">
