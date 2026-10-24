@@ -1,14 +1,14 @@
-/* Song Passport design system, in Audius's Harmony palette (default "Neue" theme tokens, Oct 2026) with an Apple-clean finish:
+/* Audius design system (Song Passport and the other Audius products): Audius purple #7E1BCC and the Audius gradient with an Apple-clean finish:
    neutral chrome, one purple accent, the Harmony gradient used sparingly, frosted bars, hairlines, pill buttons, quiet shadows.
    Type is the system stack (SF Pro on Apple devices); Avenir Next is used only where it is already installed, never shipped. */
 :root {
   --bg: #F7F7F9; --bg-2: #F5F5F7; --surface: #FFFFFF; --surface-2: #F7F7F9; --surface-3: #ECECF0;
   --line: #E4E4EA; --line-strong: #C4C4CC; --fg: #16161A; --fg-2: #44444E; --muted: #63636C; --faint: #6E6E78;
-  --blue: #6A52E0; --violet: #5B44B8; --grad: linear-gradient(315deg, #5B44B8 0%, #6A52E0 100%);
-  --grad-soft: linear-gradient(315deg, rgba(91,68,184,.10), rgba(106,82,224,.10));
-  --accent: #6A52E0; --accent-strong: #5B44B8; --accent-ink: #FFFFFF; --accent-soft: #EFEBFF;
+  --blue: #7E1BCC; --violet: #5B23E1; --grad: linear-gradient(315deg, #5B23E1 0%, #A22FEB 100%);
+  --grad-soft: linear-gradient(315deg, rgba(91,35,225,.10), rgba(126,27,204,.10));
+  --accent: #7E1BCC; --accent-strong: #5B23E1; --accent-ink: #FFFFFF; --accent-soft: #F4E8FD;
   --ok: #14763A; --ok-soft: #E6F6EC; --warn: #B45309; --warn-soft: #FEF3E2; --crit: #B91C1C; --crit-soft: #FDECEC;
-  --info: #5B44B8; --info-soft: #EFEBFF; --money: #14763A; --money-soft: #E6F6EC;
+  --info: #5B23E1; --info-soft: #F4E8FD; --money: #14763A; --money-soft: #E6F6EC;
   --glass: rgba(255,255,255,.72); --glass-side: rgba(245,245,247,.78);
   --shadow-sm: 0 1px 2px rgba(16,16,20,.04); --shadow: 0 1px 2px rgba(16,16,20,.04), 0 6px 20px rgba(16,16,20,.05);
   --shadow-lg: 0 20px 50px rgba(16,16,20,.14);
@@ -24,11 +24,11 @@
   :root:not([data-theme="light"]) {
   --bg: #0B0B0E; --bg-2: #101014; --surface: #16161A; --surface-2: #1C1C21; --surface-3: #2A2A31;
   --line: #2A2A31; --line-strong: #42424B; --fg: #F2F2F5; --fg-2: #D8D8DE; --muted: #A9A9B3; --faint: #85858F;
-  --blue: #6A52E0; --violet: #A594FF; --grad: linear-gradient(315deg, #6A52E0 0%, #A594FF 100%);
-  --grad-soft: linear-gradient(315deg, rgba(106,82,224,.18), rgba(165,148,255,.14));
-  --accent: #A594FF; --accent-strong: #6A52E0; --accent-ink: #FFFFFF; --accent-soft: #1E1A33;
+  --blue: #7E1BCC; --violet: #C17BF5; --grad: linear-gradient(315deg, #7E1BCC 0%, #A22FEB 100%);
+  --grad-soft: linear-gradient(315deg, rgba(126,27,204,.18), rgba(193,123,245,.14));
+  --accent: #C17BF5; --accent-strong: #7E1BCC; --accent-ink: #FFFFFF; --accent-soft: #24123A;
   --ok: #4ADE80; --ok-soft: #0F2A1A; --warn: #FBBF24; --warn-soft: #2E2410; --crit: #F87171; --crit-soft: #331618;
-  --info: #A594FF; --info-soft: #1E1A33; --money: #4ADE80; --money-soft: #0F2A1A;
+  --info: #C17BF5; --info-soft: #24123A; --money: #4ADE80; --money-soft: #0F2A1A;
   --glass: rgba(11,11,14,.72); --glass-side: rgba(16,16,20,.78);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
   --shadow-lg: 0 24px 60px rgba(0,0,0,.55); color-scheme: dark;
@@ -37,11 +37,11 @@
 :root[data-theme="dark"] {
   --bg: #0B0B0E; --bg-2: #101014; --surface: #16161A; --surface-2: #1C1C21; --surface-3: #2A2A31;
   --line: #2A2A31; --line-strong: #42424B; --fg: #F2F2F5; --fg-2: #D8D8DE; --muted: #A9A9B3; --faint: #85858F;
-  --blue: #6A52E0; --violet: #A594FF; --grad: linear-gradient(315deg, #6A52E0 0%, #A594FF 100%);
-  --grad-soft: linear-gradient(315deg, rgba(106,82,224,.18), rgba(165,148,255,.14));
-  --accent: #A594FF; --accent-strong: #6A52E0; --accent-ink: #FFFFFF; --accent-soft: #1E1A33;
+  --blue: #7E1BCC; --violet: #C17BF5; --grad: linear-gradient(315deg, #7E1BCC 0%, #A22FEB 100%);
+  --grad-soft: linear-gradient(315deg, rgba(126,27,204,.18), rgba(193,123,245,.14));
+  --accent: #C17BF5; --accent-strong: #7E1BCC; --accent-ink: #FFFFFF; --accent-soft: #24123A;
   --ok: #4ADE80; --ok-soft: #0F2A1A; --warn: #FBBF24; --warn-soft: #2E2410; --crit: #F87171; --crit-soft: #331618;
-  --info: #A594FF; --info-soft: #1E1A33; --money: #4ADE80; --money-soft: #0F2A1A;
+  --info: #C17BF5; --info-soft: #24123A; --money: #4ADE80; --money-soft: #0F2A1A;
   --glass: rgba(11,11,14,.72); --glass-side: rgba(16,16,20,.78);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
   --shadow-lg: 0 24px 60px rgba(0,0,0,.55); color-scheme: dark;
@@ -110,7 +110,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .card-pad { padding: 22px; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: .5px solid var(--line-strong); }
 .card-body { padding: 18px 22px; }
-.card.hero { position: relative; overflow: hidden; border: 0; color: #fff; background: linear-gradient(315deg, #3B2A86 0%, #5B44B8 45%, #6A52E0 100%); box-shadow: var(--shadow); }
+.card.hero { position: relative; overflow: hidden; border: 0; color: #fff; background: linear-gradient(315deg, #3B2A86 0%, #5B23E1 45%, #7E1BCC 100%); box-shadow: var(--shadow); }
 .card.hero .muted { color: rgba(255,255,255,.75); }
 .card.hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 80% at 100% 0%, rgba(255,255,255,.10), transparent 60%); pointer-events: none; }
 .card.glass { background: var(--glass); -webkit-backdrop-filter: saturate(1.8) blur(20px); backdrop-filter: saturate(1.8) blur(20px); }
@@ -140,8 +140,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn:hover { background: var(--surface-2); }
 .btn:active { transform: scale(.97); }
 .btn svg { width: 17px; height: 17px; stroke-width: 1.75; }
-.btn-primary { background: #6A52E0; color: #fff; border-color: transparent; }
-.btn-primary:hover { background: #5B44B8; }
+.btn-primary { background: #7E1BCC; color: #fff; border-color: transparent; }
+.btn-primary:hover { background: #5B23E1; }
 .btn-dark { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .btn-dark:hover { background: var(--fg); opacity: .9; }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--fg-2); }

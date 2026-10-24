@@ -4,6 +4,7 @@ import cfg from './demo-config.js';
 
 const TOK = {};
 for (const g of cfg.tour) for (const [t, mode, route] of g.items) TOK[t] = { mode, route };
+if (TOK.licenses) TOK.licences = TOK.licenses; // the earlier spelling still works
 const store = {
   get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { sessionStorage.setItem(k, v); } catch {} }
@@ -35,8 +36,10 @@ const ready = realFetch(new URL(`../data/${mode}.json`, import.meta.url)).then(r
   }
 });
 const pickAt = list => { const upTo = list.filter(e => e.step <= step); return upTo.length ? upTo[upTo.length - 1] : list[0]; };
+// Cover art ships with the demo: point its paths at this copy (absolute, since CSS resolves url() against the stylesheet).
+const ART = new URL('../img/art/', import.meta.url).href;
 const reply = e => {
-  const body = e.enc === 'base64' ? Uint8Array.from(atob(e.body), c => c.charCodeAt(0)) : e.body;
+  const body = e.enc === 'base64' ? Uint8Array.from(atob(e.body), c => c.charCodeAt(0)) : e.body.replace(/(["'(])\/img\/art\//g, `$1${ART}`);
   return new Response(e.status === 204 ? null : body, { status: e.status, headers: { 'content-type': e.ct || 'application/json' } });
 };
 const json = (status, data) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });

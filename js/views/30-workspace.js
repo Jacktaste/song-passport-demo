@@ -39,7 +39,7 @@ const CSS = `
 
 /* Studio player: always dark, like a console. */
 .ws-studio { position: relative; border-radius: var(--r-lg); overflow: hidden; color: #EDEDF2; background:
-  radial-gradient(120% 120% at 0% 0%, rgba(106,82,224,.24), transparent 55%), radial-gradient(90% 120% at 100% 100%, rgba(165,148,255,.14), transparent 60%), #0B0B0E;
+  radial-gradient(120% 120% at 0% 0%, rgba(126,27,204,.24), transparent 55%), radial-gradient(90% 120% at 100% 100%, rgba(193,123,245,.14), transparent 60%), #0B0B0E;
   box-shadow: 0 24px 60px rgba(10,10,40,.35), inset 0 0 0 1px rgba(255,255,255,.06); }
 .ws-studio .muted { color: rgba(237,237,242,.6); }
 .ws-studio-top { display: flex; align-items: center; gap: 12px; padding: 16px 18px 6px; }
@@ -103,7 +103,7 @@ if (!document.getElementById('ws-style')) {
 }
 
 const KINDS = {
-  stem: { label: 'Stems', one: 'Stem', color: '#6A52E0', svg: '<path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/>' },
+  stem: { label: 'Stems', one: 'Stem', color: '#7E1BCC', svg: '<path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/>' },
   mix: { label: 'Mixes', one: 'Mix', color: '#8B5CF6', svg: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>' },
   master: { label: 'Masters', one: 'Master', color: '#E11D48', svg: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>' },
   session: { label: 'Sessions', one: 'Session', color: '#F97316', svg: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>' },
@@ -670,7 +670,7 @@ async function studio(box, song, file, { onClose, onNotes }) {
     const bars = Math.max(40, Math.floor(W / (3 * dpr)));
     const bw = Math.max(1, (W / bars) - 1 * dpr);
     const grad = g.createLinearGradient(0, 0, W, 0);
-    grad.addColorStop(0, '#5B44B8'); grad.addColorStop(1, '#A594FF');
+    grad.addColorStop(0, '#5B23E1'); grad.addColorStop(1, '#C17BF5');
     for (let i = 0; i < bars; i++) {
       let v = 0.04;
       if (pk) { const a0 = Math.floor(i * pk.peaks.length / bars), a1 = Math.max(a0 + 1, Math.floor((i + 1) * pk.peaks.length / bars)); for (let j = a0; j < a1; j++) v = Math.max(v, pk.peaks[j]); }
@@ -833,7 +833,7 @@ function remixDialog(song, user, { direct }) {
       const prev = () => {
         const pm = Math.max(0, Math.min(100, Number(form.pm.value) || 0)), pp = Math.max(0, Math.min(100, Number(form.pp.value) || 0));
         const bar = (label, keep) => html`<div class="stack-sm"><div class="row between small"><span class="muted">${label}</span><span class="num"><b>${keep}%</b> original · <b>${Math.round((100 - keep) * 100) / 100}%</b> ${esc(form.artist_credit.value || 'you')}</span></div>
-          <div class="splitbar"><i style="width:${keep}%;background:#A594FF"></i><i style="width:${100 - keep}%;background:#6A52E0"></i></div></div>`;
+          <div class="splitbar"><i style="width:${keep}%;background:#C17BF5"></i><i style="width:${100 - keep}%;background:#7E1BCC"></i></div></div>`;
         m.querySelector('#ws-prev').innerHTML = html`<div class="stack" style="background:var(--surface-2);border-radius:14px;padding:14px">${bar('Master', pm)}${bar('Publishing', pp)}</div>`.s;
       };
       form.addEventListener('input', prev);

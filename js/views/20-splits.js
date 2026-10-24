@@ -163,7 +163,7 @@ if (!document.getElementById('sp-style')) {
   /* certificate */
   .sp-cert-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
   .sp-paper { position:relative; background:#FBFAF6; color:#16161D; border-radius:8px; box-shadow:0 30px 80px rgba(10,10,30,.25), 0 2px 6px rgba(10,10,30,.08); padding:64px 64px 48px; overflow:hidden;
-    background-image: radial-gradient(70% 50% at 50% 0%, rgba(106,82,224,.06), transparent 70%), repeating-linear-gradient(135deg, rgba(20,20,60,.018) 0 1px, transparent 1px 7px); }
+    background-image: radial-gradient(70% 50% at 50% 0%, rgba(126,27,204,.06), transparent 70%), repeating-linear-gradient(135deg, rgba(20,20,60,.018) 0 1px, transparent 1px 7px); }
   .sp-paper::before { content:""; position:absolute; inset:16px; border:1px solid rgba(40,40,90,.22); border-radius:4px; pointer-events:none; }
   .sp-paper::after { content:""; position:absolute; inset:21px; border:3px double rgba(40,40,90,.12); border-radius:3px; pointer-events:none; }
   .sp-paper .serif { font-family:"Fraunces", Georgia, "Times New Roman", serif; letter-spacing:-.01em; }
@@ -259,7 +259,7 @@ async function platformKey() {
 export async function verifyInBrowser(cert) {
   const checks = [];
   const add = (label, ok, detail) => checks.push({ label, ok: !!ok, detail });
-  if (!cert?.doc || !cert?.doc_hash) { add('Certificate format', false, 'Not a Song Passport split certificate'); return { ok: false, checks, supported: true }; }
+  if (!cert?.doc || !cert?.doc_hash) { add('Certificate format', false, 'Not an Audius split certificate'); return { ok: false, checks, supported: true }; }
   const key = await platformKey();
   const docHash = await sha256Hex(canonical(cert.doc));
   add('Document hash matches', docHash === cert.doc_hash, docHash);
@@ -476,7 +476,7 @@ app.songTab({
 
     const contributorForm = (l = {}) => html`<form class="form-grid" id="cf">
       <label class="field"><span>Full name</span><input class="input" name="name" required value="${l.name || ''}" placeholder="Legal or professional name"></label>
-      <label class="field"><span>Email <span class="hint">we email them the signing link</span></span><input class="input" type="email" name="email" value="${l.email || ''}" placeholder="name@example.com"></label>
+      <label class="field"><span>Email <span class="hint">we email them the signing link</span></span><input class="input" type="email" name="email" value="${l.email || ''}" placeholder="name@studio.com"></label>
       <label class="check full"><input type="checkbox" name="company" ${l.entity === 'company' ? 'checked' : ''}><span class="small">This is a company (label, publisher, management). The person who signs confirms they have authority to sign for it.</span></label>
       <div class="field full"><span>Roles</span><div class="sp-roles">${ROLES.map(r => html`<button type="button" class="sp-role ${(l.roles || []).includes(r) ? 'on' : ''}" data-role="${r}">${r}</button>`)}</div></div>
       <label class="field"><span>${term('IPI')} <span class="hint">optional, 9–11 digits</span></span><input class="input mono" name="ipi" value="${l.ipi || ''}" inputmode="numeric"></label>
@@ -610,7 +610,7 @@ app.songTab({
 // ======================================================================
 // Public signing page: one screen, "Agree and sign".
 // ======================================================================
-const topBar = right => html`<div class="sp-top sp-noprint"><a class="brand" href="#/home"><span class="brand-mark">${icon('passport')}</span><span>Song Passport<small>Built on Audius</small></span></a>${right || ''}</div>`;
+const topBar = right => html`<div class="sp-top sp-noprint"><a class="brand" href="#/home"><span class="brand-mark">${icon('audius')}</span><span>Audius<small>Song Passport</small></span></a>${right || ''}</div>`;
 const shareOf = ls => {
   const m = ls.reduce((a, l) => a + l.master_bps, 0), p = ls.reduce((a, l) => a + l.publishing_bps, 0);
   return { m, p, same: m === p };
@@ -675,7 +675,7 @@ app.route('/sign/:token', async ({ el, params }) => {
         </div>`}
       </div>
       <div class="sp-foot tiny faint">${icon('shield')} ${v.verify?.method === 'email_link' ? `Opened from the email we sent to ${v.verify.masked}, which confirms it's you.` : v.verify?.method === 'session' ? `Signed in as ${v.verify.masked}.` : 'We confirm your email with a one-time code before your signature counts.'}
-        Every signature is witnessed by Song Passport and sealed in a certificate every party receives. Link expires ${date(s.expires_at)}.</div>
+        Every signature is witnessed by Audius and sealed in a certificate every party receives. Link expires ${date(s.expires_at)}.</div>
     </div>`.s;
     if (st.showDraw) st.pad = makePad(el.querySelector('.sp-pad'));
     el.querySelector('[data-f=code]')?.focus();
@@ -828,9 +828,9 @@ function makePad(box) {
 // Certificate (public, printable)
 // ======================================================================
 const VERIFY_LABEL = { email_link: 'Opened the link emailed to them', email_code: 'Email one-time code', session: 'Signed-in verified account', sms_reply: 'Text reply (weaker)' };
-const DELIVERY_LABEL = { email: 'Email from Song Passport', shared: 'Link shared by the sender', session: 'In the app' };
+const DELIVERY_LABEL = { email: 'Email from Audius', shared: 'Link shared by the sender', session: 'In the app' };
 const rosette = () => raw(`<svg class="sp-rosette" viewBox="0 0 120 120" aria-hidden="true"><defs>
-  <linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B44B8"/><stop offset="1" stop-color="#6A52E0"/></linearGradient>
+  <linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5B23E1"/><stop offset="1" stop-color="#7E1BCC"/></linearGradient>
   <path id="spc" d="M60 60 m-41 0 a41 41 0 1 1 82 0 a41 41 0 1 1 -82 0"/></defs>
   ${Array.from({ length: 24 }, (_, i) => `<path d="M60 4 L64 16 L56 16 Z" fill="url(#spg)" opacity=".9" transform="rotate(${i * 15} 60 60)"/>`).join('')}
   <circle cx="60" cy="60" r="48" fill="url(#spg)"/><circle cx="60" cy="60" r="45" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/>
@@ -859,7 +859,7 @@ app.route('/certificate/:id', async ({ el, params }) => {
     <article class="sp-paper">
       ${c.status === 'superseded' ? html`<div class="sp-ribbon">Superseded</div>` : ''}
       ${rosette()}
-      <div class="lbl head">Song Passport · Certificate of completion · executed split</div>
+      <div class="lbl head">Audius · Song Passport · Certificate of completion · executed split</div>
       <h1 class="serif" style="margin-top:14px;max-width:72%">${song.title}${song.version_title ? html` <span style="font-weight:400">(${song.version_title})</span>` : ''}</h1>
       <div class="serif" style="font-size:20px;margin-top:6px">${song.artist_credit}</div>
       <div class="row wrap mut small" style="margin-top:14px;gap:18px">
@@ -882,7 +882,7 @@ app.route('/certificate/:id', async ({ el, params }) => {
         <div class="serif" style="font-weight:600;margin-top:8px">${s.payload.signer_person || s.payload.typed_name}${s.payload.company ? html` <span style="font-weight:400">for ${s.payload.company}</span>` : ''}</div>
         ${s.payload.company ? html`<div class="tiny mut">Confirmed authority to sign for ${s.payload.company}</div>` : ''}
         <div class="tiny mut">${s.payload.on_behalf_song_id ? 'For the original song · ' : ''}${dateTime(s.payload.signed_at)}${s.payload.verification ? ` · ${VERIFY_LABEL[s.payload.verification] || s.payload.verification}` : ''}</div>
-        <div class="hashv" style="margin-top:4px;font-size:10.5px" title="Platform attestation, not a personal key">Witnessed by Song Passport · ${s.platform_signature.slice(0, 16)}…</div></div>`)}</div>
+        <div class="hashv" style="margin-top:4px;font-size:10.5px" title="Platform attestation, not a personal key">Witnessed by Audius · ${s.platform_signature.slice(0, 16)}…</div></div>`)}</div>
       <p class="tiny mut" style="margin-top:16px">${c.witness_note || ''}</p>
       <div class="rule"></div>
       <div class="grid grid-2" style="gap:16px 30px">
@@ -906,7 +906,7 @@ app.route('/certificate/:id', async ({ el, params }) => {
           <tr><td>Device</td><td>${a.device || '—'}</td></tr>
           ${a.consent_text ? html`<tr><td>Agreed to</td><td>“${a.consent_text}”</td></tr>` : ''}
         </tbody></table></div>`)}</div>
-      <p class="tiny mut" style="margin-top:28px;line-height:1.6">Anyone can check this certificate: re-hash the document, then verify each signature and the platform seal with the public key at ${c.public_key_url}. Song Passport · ${c.split_id}</p>
+      <p class="tiny mut" style="margin-top:28px;line-height:1.6">Anyone can check this certificate: re-hash the document, then verify each signature and the platform seal with the public key at ${c.public_key_url}. Audius · ${c.split_id}</p>
     </article>
     <div class="card card-pad sp-noprint" style="margin-top:18px" id="sp-browser"><div class="row between"><h2 class="h3">Checked in your browser</h2><span class="small muted">Independent of our server</span></div><div class="small muted" style="margin-top:6px">Running…</div></div>
   </div>`.s;
@@ -955,12 +955,12 @@ app.route('/certificate/:id/lod', async ({ el, params }) => {
       <table><thead><tr><th>Payee</th><th>Administered by</th><th class="r">Share</th></tr></thead><tbody>
         ${pubLines.map(l => html`<tr><td class="serif" style="font-weight:600">${l.name}${l.ipi ? html` <span class="mono mut" style="font-size:11px;font-weight:400">IPI ${l.ipi}</span>` : ''}</td><td class="small mut">${l.administered_by || l.pro || '—'}</td><td class="r">${pct(l.publishing_bps)}</td></tr>`)}
       </tbody></table>` : ''}
-      <p style="margin-top:22px;line-height:1.7">Each payee will send you their own payment and tax details. This direction carries out the split sheet signed electronically by every party on ${date(c.execution.executed_at)} (Song Passport certificate ${c.split_id}, document SHA-256 ${c.doc_hash.slice(0, 16)}…), which you can verify at ${location.origin}/#/verify. It applies between the signers, subject to their existing agreements.</p>
+      <p style="margin-top:22px;line-height:1.7">Each payee will send you their own payment and tax details. This direction carries out the split sheet signed electronically by every party on ${date(c.execution.executed_at)} (Audius certificate ${c.split_id}, document SHA-256 ${c.doc_hash.slice(0, 16)}…), which you can verify at ${location.origin}/#/verify. It applies between the signers, subject to their existing agreements.</p>
       <div class="sp-sigs" style="margin-top:34px">
         <div class="sp-sigblock">
           <div class="ink">${ownerSig?.drawn_svg ? raw(`<svg viewBox="0 0 600 200" preserveAspectRatio="xMinYMax meet"><path d="${esc(ownerSig.drawn_svg)}" fill="none" stroke="#1b2a7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`) : html`<span class="sp-script">${ownerSig ? (ownerSig.payload.signer_person || ownerSig.payload.typed_name) : ownerName}</span>`}</div>
           <div class="serif" style="font-weight:600;margin-top:8px">${ownerName}</div>
-          <div class="tiny mut">E-signed ${ownerSig ? dateTime(ownerSig.payload.signed_at) : ''} · witnessed by Song Passport</div>
+          <div class="tiny mut">E-signed ${ownerSig ? dateTime(ownerSig.payload.signed_at) : ''} · witnessed by Audius</div>
         </div>
         <div class="sp-sigblock"><div class="ink"></div><div class="serif" style="font-weight:600;margin-top:8px">Signature</div><div class="tiny mut">Only if your distributor asks for a wet signature · Date</div></div>
       </div>

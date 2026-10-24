@@ -126,7 +126,7 @@ async function route() {
     await document.startViewTransition(swap).updateCallbackDone.catch(() => {});
     if (seq !== routeSeq) return;
   } else swap();
-  document.title = (match.title ? match.title + ' · ' : '') + 'Song Passport';
+  document.title = (match.title ? match.title + ' · ' : '') + 'Audius';
   window.scrollTo(0, 0);
   try {
     const out = await match.handler({ el, params, query, user: current.user, path, isCurrent: () => seq === routeSeq });
@@ -169,7 +169,7 @@ function paintShell() {
   root.innerHTML = html`
   <div class="shell">
     <aside class="sidebar">
-      <a class="brand" href="#/home"><span class="brand-mark">${icon('passport')}</span><span>Song Passport<small>Built on Audius</small></span></a>
+      <a class="brand" href="#/home"><span class="brand-mark">${icon('audius')}</span><span>Audius<small>Song Passport</small></span></a>
       <nav class="nav" aria-label="Sections">
         ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}</div>
           ${s.items.map(n => html`<a href="#${n.href}" data-href="${n.href}">${icon(n.icon || 'dot')}<span>${n.label}</span>${n.badge ? html`<span class="count">${n.badge()}</span>` : ''}</a>`)}`)}
@@ -185,7 +185,7 @@ function paintShell() {
     <div class="main">
       <header class="topbar">
         <button class="btn btn-ghost btn-icon menu-btn" data-act="menu" aria-label="Menu">${icon('menu')}</button>
-        <form class="search" data-act="search"><input name="q" placeholder="Search every song and artist" autocomplete="off" aria-label="Search">${icon('search')}</form>
+        <form class="search" data-act="search"><input name="q" placeholder="Search" autocomplete="off" aria-label="Search">${icon('search')}</form>
         <div class="spacer"></div>
         <button class="btn btn-ghost btn-icon" data-act="theme" title="Light or dark" aria-label="Switch light or dark appearance">${icon('moon')}</button>
         ${u ? '' : html`<a class="btn btn-primary btn-sm" href="#/signin">Sign in</a>`}
@@ -242,7 +242,7 @@ export function toast(msg, { error = false, ms = 2000 } = {}) {
 }
 
 // Share a link: the native share sheet on touch devices, otherwise copy it.
-export async function shareLink(url, { title = 'Song Passport', label = 'Link' } = {}) {
+export async function shareLink(url, { title = 'Audius', label = 'Link' } = {}) {
   if (navigator.share && matchMedia('(pointer: coarse)').matches) {
     try { await navigator.share({ title, url }); return; } catch (e) { if (e.name === 'AbortError') return; }
   }
@@ -317,7 +317,7 @@ export const bytes = n => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFi
 export const initials = s => String(s || '?').replace(/@.*/, '').split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 
 // Stable color per name, from a premium palette.
-const PALETTE = ['#6A52E0', '#8B5CF6', '#EC4899', '#F97316', '#10B981', '#06B6D4', '#6366F1', '#E11D48', '#14B8A6', '#A855F7', '#F59E0B', '#3B82F6'];
+const PALETTE = ['#7E1BCC', '#8B5CF6', '#EC4899', '#F97316', '#10B981', '#06B6D4', '#6366F1', '#E11D48', '#14B8A6', '#A855F7', '#F59E0B', '#3B82F6'];
 export function colorFor(s) { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PALETTE[h % PALETTE.length]; }
 export const shareColors = PALETTE;
 // The same color, darkened until white text on it passes AA (4.5:1). For initials on avatars.
@@ -503,7 +503,7 @@ app.route('/signin', async ({ el, query }) => {
       <p class="muted">We email you a link. Tap it and you're straight back here. No password, and new here is fine: the same link sets up your free account.</p></div>
     ${query.get('expired') ? html`<div class="callout warn">${icon('alert')}<div>That link expired or was already used. Request a new one.</div></div>` : ''}
     <form class="stack" id="f">
-      <label class="field"><span>Email</span><input class="input" type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label>
+      <label class="field"><span>Email</span><input class="input" type="email" name="email" required autocomplete="email" placeholder="you@studio.com"></label>
       <button class="btn btn-primary btn-lg">Email me a sign-in link</button>
     </form>
     <div id="sent"></div>
@@ -549,7 +549,7 @@ function homeScreenHint() {
   if (!ios || navigator.standalone || seen || !current.user) return;
   const box = document.createElement('div');
   box.className = 'a2hs'; box.setAttribute('role', 'note');
-  box.innerHTML = html`<span class="brand-mark" style="flex:none">${icon('passport')}</span><div style="flex:1">Add Song Passport to your Home Screen: tap ${icon('share')} Share, then <b>Add to Home Screen</b>.</div>
+  box.innerHTML = html`<span class="brand-mark" style="flex:none">${icon('audius')}</span><div style="flex:1">Add Audius to your Home Screen: tap ${icon('share')} Share, then <b>Add to Home Screen</b>.</div>
     <button class="btn btn-ghost btn-icon btn-sm" aria-label="Dismiss">${icon('x')}</button>`.s;
   box.querySelector('button').onclick = () => box.remove();
   try { localStorage.setItem('sp-a2hs', '1'); } catch {}

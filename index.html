@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#7E1BCC">
 <link rel="icon" href="img/icon.svg" type="image/svg+xml">
 </head>
 <body>
-<title>Song Passport</title>
+<title>Audius demo</title>
 <link rel="stylesheet" href="css/app.css">
 <style>
   /* Demo bar: a quiet strip above the real app, drawn with the app's own tokens so it follows light and dark. */
@@ -33,7 +34,7 @@
   @media (max-width: 560px) { .db-note { display: none; } .db-in { justify-content: space-between; } }
 </style>
 <div id="demo-bar"></div>
-<div id="app"></div>
+<div id="app"><p style="padding:48px 16px;text-align:center;color:var(--muted);font:15px var(--sans)">Loading the demo…</p></div>
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <script type="module" src="js/demo-shim.js"></script>
 <script type="module" src="js/app.js"></script>
