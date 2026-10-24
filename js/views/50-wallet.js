@@ -241,7 +241,7 @@ app.route('/wallet', async ({ el, query }) => {
         <div class="small muted">Paid out the moment everyone signs ${infoTip(`Money that arrived before everyone signed waits in the song's wallet and is paid out the moment the split is fully signed. If it is not signed within ${d.policy.holdMaxDays} days, it goes back to whoever paid it in.`, 'About held money')}</div></div>
     </div>
     <div class="card"><div class="list">${held.map(h => html`<a class="list-item" href="#/song/${h.song_id}?tab=${h.manage ? 'splits' : 'wallet'}">
-      ${art(h.title + h.artist_credit, { label: h.title })}<div class="grow"><div class="title">${h.title}</div><div class="sub">${h.reason}</div></div>
+      ${art(h.title + h.artist_credit, { label: h.title, url: h.artwork_url })}<div class="grow"><div class="title">${h.title}</div><div class="sub">${h.reason}</div></div>
       <b class="wl-money" style="color:var(--warn)">${fmt(h.amount, h.currency)}</b>${h.manage ? html`<span class="btn btn-sm wl-hide-sm">Get it signed ${icon('arrow')}</span>` : ''}</a>`)}</div></div>` : ''}
 
     ${lifetime ? html`<div class="grid grid-3">
@@ -257,7 +257,7 @@ app.route('/wallet', async ({ el, query }) => {
       <div class="stack-lg">
         ${songs.length ? html`<div class="card"><div class="card-head"><h2 class="h3">By song</h2><span class="muted small">Your share</span></div>
           ${songs.length ? html`<div class="table-wrap"><table class="table"><thead><tr><th>Song</th><th class="r wl-hide-sm">Payments</th><th class="r">This month</th><th class="r">Lifetime</th></tr></thead><tbody>
-            ${songs.map(s => html`<tr class="click" data-href="/song/${s.song_id}?tab=wallet"><td><div class="row">${art(s.title + s.artist_credit, { label: s.title })}<div style="min-width:0"><div style="font-weight:600">${s.title}</div><div class="small muted">${s.artist_credit}</div></div></div></td>
+            ${songs.map(s => html`<tr class="click" data-href="/song/${s.song_id}?tab=wallet"><td><div class="row">${art(s.title + s.artist_credit, { label: s.title, url: s.artwork_url })}<div style="min-width:0"><div style="font-weight:600">${s.title}</div><div class="small muted">${s.artist_credit}</div></div></div></td>
               <td class="r wl-hide-sm num">${s.payments}</td><td class="r wl-money">${fmt(s.thisMonth, cur)}</td><td class="r wl-money"><b>${fmt(s.lifetime, cur)}</b></td></tr>`)}
           </tbody></table></div>` : ''}
         </div>` : ''}

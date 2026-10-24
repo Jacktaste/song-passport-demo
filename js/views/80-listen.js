@@ -755,7 +755,7 @@ app.route('/listen/artist/:id', async ({ el, params, user }) => {
           <small class="${b.presale ? 'hot' : ''}">${b.presale ? 'Presale' : b.soldOut ? 'Sold out' : b.price_minor ? money(b.price_minor) + (b.kind === 'membership' ? ' a month' : '') : b.subtitle || ''}</small></button>`)}</div>` : ''}
       <div class="au-h2"><h2>Popular</h2></div>
       <div class="au-rows">${d.songs.slice(0, 10).map(s => songRow(s, 'songs', s.access === 'preview' ? 'Preview' : ''))}</div>
-      ${d.albums.length ? html`<div class="au-h2"><h2>Albums</h2></div><div class="au-shelf">${d.albums.map(r => html`<a class="au-tile" href="#/listen/album/${r.id}">${art(r.title)}<b>${r.title}</b><small>${(r.release_date || '').slice(0, 4) || r.type}</small></a>`)}</div>` : ''}`.s;
+      ${d.albums.length ? html`<div class="au-h2"><h2>Albums</h2></div><div class="au-shelf">${d.albums.map(r => html`<a class="au-tile" href="#/listen/album/${r.id}">${art(r.title, r.artwork_url)}<b>${r.title}</b><small>${(r.release_date || '').slice(0, 4) || r.type}</small></a>`)}</div>` : ''}`.s;
   };
   paint();
   wireLists(main, { songs: d.songs });

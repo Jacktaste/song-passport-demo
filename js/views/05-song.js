@@ -186,7 +186,7 @@ app.songTab({
             <button class="card-foot-btn" data-act="more-people">Show all ${people.length}</button>` : ''}
         </section>` : ''}
         ${song.children.length ? html`<section class="card"><div class="card-head"><h2 class="h3">Remixes and versions</h2></div><div class="list">
-          ${song.children.map(c => html`<a class="list-item" href="#/song/${c.id}">${art(c.title + c.artist_credit, { label: c.title })}<div class="grow"><div class="title">${c.title}</div><div class="sub">${c.artist_credit} · ${c.parent_relation}</div></div>${statusBadge(c.status)}</a>`)}
+          ${song.children.map(c => html`<a class="list-item" href="#/song/${c.id}">${art(c.title + c.artist_credit, { label: c.title, url: c.artwork_url })}<div class="grow"><div class="title">${c.title}</div><div class="sub">${c.artist_credit} · ${c.parent_relation}</div></div>${statusBadge(c.status)}</a>`)}
         </div></section>` : ''}
       </div>
     </div>`.s;

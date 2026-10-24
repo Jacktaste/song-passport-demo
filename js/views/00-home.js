@@ -136,7 +136,7 @@ function monthView(m, gaps) {
     <div class="ah-legend">${m.sources.map(x => html`<span><i style="background:${SOURCE_COLOR[x.key]}"></i>${x.label} <b>${money(x.amount)}</b></span>`)}</div></section>` : ''}
   <div class="ah-two">
     <section class="ah-card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Your songs</h2><a class="small" href="#/songs">See all</a></div>
-      <div class="ah-songs">${m.songs.slice(0, 6).map(s => html`<a class="ah-song" href="#/song/${s.id}">${art(s.title + s.artist_credit, { label: s.title })}
+      <div class="ah-songs">${m.songs.slice(0, 6).map(s => html`<a class="ah-song" href="#/song/${s.id}">${art(s.title + s.artist_credit, { label: s.title, url: s.artwork_url })}
         <div class="grow"><div class="t">${s.title}</div><div class="m">${money(s.amount)} this month</div></div>${pill(s)}</a>`)}</div></section>
     <section class="ah-card"><h2>Your listeners</h2>
       ${m.levels.filter(l => l.name !== 'Listener' || l.n).map(l => html`<div class="ah-level"><div class="row"><b>${l.name}</b><span class="muted">${fmt(l.n)}</span></div>

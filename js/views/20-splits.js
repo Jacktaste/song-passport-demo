@@ -607,7 +607,7 @@ app.songTab({
             timer = setTimeout(async () => {
               const { items } = await api(`/api/splits/song-lookup?q=${encodeURIComponent(e.target.value)}`).catch(() => ({ items: [] }));
               m.querySelector('#sr').innerHTML = html`${items.filter(s => s.id !== song.id).map(s => html`<button type="button" class="list-item" style="border:0;background:none;text-align:left;cursor:pointer;padding:10px 4px" data-pick="${s.id}" data-name="${s.title} · ${s.artist_credit}">
-                ${art(s.title + s.artist_credit, { label: s.title })}<div class="grow"><div class="title">${s.title}</div><div class="sub">${s.artist_credit}</div></div>${statusBadge(s.status)}</button>`)}
+                ${art(s.title + s.artist_credit, { label: s.title, url: s.artwork_url })}<div class="grow"><div class="title">${s.title}</div><div class="sub">${s.artist_credit}</div></div>${statusBadge(s.status)}</button>`)}
                 ${e.target.value.length > 1 && !items.length ? html`<div class="small muted" style="padding:10px 4px">No claimed songs match. A song needs a verified owner before it can be paid a share.</div>` : ''}`.s;
             }, 220);
           });
