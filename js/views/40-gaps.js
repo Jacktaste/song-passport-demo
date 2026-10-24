@@ -1,5 +1,5 @@
 // Gap checker views: the song "Health" tab and the "Money check" page across all my songs.
-import { app, html, api, icon, money } from '../app.js';
+import { app, html, api, icon, money, art } from '../app.js';
 
 app.nav({ id: 'gaps', label: 'Money check', href: '/gaps', icon: 'scan', section: 'Passport', order: 4, auth: true , artist: true });
 
@@ -34,6 +34,9 @@ if (!document.getElementById('gp-style')) {
   .gp-amt.soft { color: var(--muted); font-weight: 500; font-size: 13px; }
   .gp-row { display: grid; grid-template-columns: 46px minmax(0,1fr) 150px 120px; gap: 16px; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--line); color: inherit; }
   .gp-row:last-child { border-bottom: 0; }
+  .gp-art { position: relative; width: 46px; height: 46px; }
+  .gp-score { position: absolute; right: -6px; bottom: -6px; min-width: 24px; padding: 1px 6px; border-radius: 999px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); font-size: 11px; font-weight: 700; text-align: center; }
+  .gp-score.crit { color: var(--crit); } .gp-score.warn { color: var(--warn); } .gp-score.ok { color: var(--ok); }
   a.gp-row:hover { background: var(--surface-2); text-decoration: none; }
   .gp-row .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gp-row .s { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -156,7 +159,7 @@ app.route('/gaps', async ({ el }) => {
   <div class="card">
     <div class="card-head"><h2 class="h3">Songs</h2><span class="muted small">${t.songs} checked · ${t.healthy} healthy</span></div>
     ${r.songs.map(s => html`<a class="gp-row" href="#/song/${s.songId}?tab=health">
-      ${scoreRing(s.score, { size: 'sm' })}
+      <div class="gp-art">${art(s.title + s.artist, { label: s.title, url: s.artwork_url })}<span class="gp-score ${s.score < 50 ? 'crit' : s.score < 80 ? 'warn' : 'ok'}" title="Health ${s.score} of 100">${s.score}</span></div>
       <div style="min-width:0"><div class="t">${s.title}</div><div class="s">${s.artist}${s.top[0] ? ` · ${s.top[0].title}` : ' · All clear'}</div></div>
       <div class="top-gap">${s.counts.critical ? html`<span class="badge crit">${s.counts.critical} critical</span>` : s.counts.high ? html`<span class="badge warn">${s.counts.high} high</span>` : s.counts.medium + s.counts.low ? html`<span class="badge info">${s.counts.medium + s.counts.low} minor</span>` : html`<span class="badge ok">Healthy</span>`}</div>
       <div style="text-align:right">${s.atRiskMinor ? html`<span class="gp-amt">about ${money(s.atRiskMinor)}</span>` : s.toCheck ? html`<span class="gp-amt soft">${s.toCheck} to check</span>` : html`<span class="muted small">—</span>`}</div>
