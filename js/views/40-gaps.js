@@ -1,7 +1,7 @@
 // Gap checker views: the song "Health" tab and the "Money check" page across all my songs.
 import { app, html, api, icon, money } from '../app.js';
 
-app.nav({ id: 'gaps', label: 'Money check', href: '/gaps', icon: 'scan', section: 'Passport', order: 4, auth: true });
+app.nav({ id: 'gaps', label: 'Money check', href: '/gaps', icon: 'scan', section: 'Passport', order: 4, auth: true , artist: true });
 
 if (!document.getElementById('gp-style')) {
   const st = document.createElement('style');
@@ -76,8 +76,8 @@ const fixCard = g => html`<div class="card gp-fix ${g.severity}">
     <div class="how">${icon('sparkle')}<span>${g.fix}</span></div>
   </div>
   <div class="act">
-    ${g.moneyMinor ? html`<span class="gp-amt" title="Estimated a year">${money(g.moneyMinor)}<span class="tiny muted" style="font-family:var(--sans);font-weight:500"> /yr</span></span>`
-      : g.unverifiedMinor ? html`<span class="gp-amt soft" title="Cannot be confirmed until this is fixed">up to ${money(g.unverifiedMinor)}/yr</span>` : ''}
+    ${g.moneyMinor ? html`<span class="gp-amt" title="${g.basis === 'statements' ? 'Worked out from your statements' : 'Estimated a year'}">about ${money(g.moneyMinor)}<span class="tiny muted" style="font-family:var(--sans);font-weight:500"> /yr</span></span>`
+      : g.check ? html`<span class="badge info plain" title="We can't put a number on this until it's checked">To check</span>` : ''}
     ${g.action ? html`<a class="btn btn-sm ${g.severity === 'critical' ? 'btn-primary' : ''}" href="#${g.action.href}">${g.action.label} ${icon('arrow')}</a>` : ''}
   </div></div>`;
 
@@ -108,9 +108,9 @@ app.songTab({
         ${scoreRing(g.score)}
         <div class="stack-sm">
           <div class="eyebrow">${g.publicView ? 'Public health check' : 'Passport health'}</div>
-          ${g.atRiskMinor ? html`<div class="gp-money" style="color:var(--crit)">${money(g.atRiskMinor)}<span class="muted" style="font-size:.45em;font-weight:600;letter-spacing:0"> a year at risk</span></div>`
-            : html`<div class="gp-money">${fixable ? 'No confirmed money at risk' : 'All clear'}</div>`}
-          <p class="muted">${g.unverifiedMinor ? html`Up to <b style="color:var(--fg)">${money(g.unverifiedMinor)}</b> more a year can't be confirmed until the gaps below are filled. ` : ''}${fixable ? `${fixable} thing${fixable === 1 ? '' : 's'} to fix, worst first.` : 'Every code, split and registration we check is in place.'}</p>
+          ${g.atRiskMinor ? html`<div class="gp-money" style="color:var(--crit)">About ${money(g.atRiskMinor)}<span class="muted" style="font-size:.45em;font-weight:600;letter-spacing:0"> a year may be waiting for you</span></div>`
+            : html`<div class="gp-money">${g.toCheck ? `${g.toCheck} thing${g.toCheck === 1 ? '' : 's'} to check` : fixable ? 'Nothing confirmed missing' : 'All clear'}</div>`}
+          <p class="muted">${g.atRiskMinor && g.plays ? 'Worked out from your statements. ' : ''}${g.atRiskMinor && g.toCheck ? `Plus ${g.toCheck} thing${g.toCheck === 1 ? '' : 's'} to check. ` : ''}${fixable ? `${fixable} thing${fixable === 1 ? '' : 's'} to fix, worst first.` : 'Every code, split and registration we check is in place.'}</p>
           <div class="gp-sev">${['critical', 'high', 'medium', 'low'].filter(s => g.counts[s]).map(s => html`<span class="badge ${SEV_CLASS[s]}">${g.counts[s]} ${SEV_LABEL[s].toLowerCase()}</span>`)}</div>
         </div>
       </div>
@@ -137,9 +137,12 @@ app.route('/gaps', async ({ el }) => {
   <div class="page-head"><div><h1>Money check</h1><p class="lede">Worst first. Fix the top of the list and you collect more.</p></div></div>
   <div class="card hero" style="padding:30px;margin-bottom:18px">
     <div class="row wrap" style="gap:34px;position:relative;z-index:1;align-items:flex-end">
-      <div><div class="eyebrow" style="color:rgba(255,255,255,.75)">Estimated money at risk</div>
-        <div class="gp-money gp-hero-money" style="font-size:clamp(2.2rem,1.5rem + 2.6vw,3.4rem);margin-top:8px">${money(t.atRiskMinor)}<span style="font-size:.38em;font-weight:600;opacity:.8;letter-spacing:0"> a year</span></div>
-        <div class="muted" style="margin-top:6px">${t.unverifiedMinor ? `Up to ${money(t.unverifiedMinor)} more can't be confirmed yet.` : ''}</div></div>
+      <div>${t.atRiskMinor ? html`<div class="eyebrow" style="color:rgba(255,255,255,.75)">May be waiting for you</div>
+        <div class="gp-money gp-hero-money" style="font-size:clamp(2.2rem,1.5rem + 2.6vw,3.4rem);margin-top:8px">About ${money(t.atRiskMinor)}<span style="font-size:.38em;font-weight:600;opacity:.8;letter-spacing:0"> a year</span></div>
+        <div class="muted" style="margin-top:6px">Worked out from your statements.${t.toCheck ? ` Plus ${t.toCheck} thing${t.toCheck === 1 ? '' : 's'} to check.` : ''}</div>`
+        : html`<div class="eyebrow" style="color:rgba(255,255,255,.75)">Money check</div>
+        <div class="gp-money gp-hero-money" style="font-size:clamp(2.2rem,1.5rem + 2.6vw,3.4rem);margin-top:8px">${t.toCheck ? `${t.toCheck} thing${t.toCheck === 1 ? '' : 's'} to check` : 'All clear'}</div>
+        <div class="muted" style="margin-top:6px">We show a dollar figure once your statements and a check confirm it.</div>`}</div>
       <div class="spacer"></div>
       <div class="row wrap" style="gap:30px">
         <div><div style="font:800 28px var(--display)">${t.songsWithGaps}</div><div class="muted small">songs need fixes</div></div>
@@ -156,7 +159,7 @@ app.route('/gaps', async ({ el }) => {
       ${scoreRing(s.score, { size: 'sm' })}
       <div style="min-width:0"><div class="t">${s.title}</div><div class="s">${s.artist}${s.top[0] ? ` · ${s.top[0].title}` : ' · All clear'}</div></div>
       <div class="top-gap">${s.counts.critical ? html`<span class="badge crit">${s.counts.critical} critical</span>` : s.counts.high ? html`<span class="badge warn">${s.counts.high} high</span>` : s.counts.medium + s.counts.low ? html`<span class="badge info">${s.counts.medium + s.counts.low} minor</span>` : html`<span class="badge ok">Healthy</span>`}</div>
-      <div style="text-align:right">${s.atRiskMinor ? html`<span class="gp-amt">${money(s.atRiskMinor)}</span>` : s.unverifiedMinor ? html`<span class="gp-amt soft">up to ${money(s.unverifiedMinor)}</span>` : html`<span class="muted small">—</span>`}</div>
+      <div style="text-align:right">${s.atRiskMinor ? html`<span class="gp-amt">about ${money(s.atRiskMinor)}</span>` : s.toCheck ? html`<span class="gp-amt soft">${s.toCheck} to check</span>` : html`<span class="muted small">—</span>`}</div>
     </a>`)}
   </div>
   <div style="margin-top:18px">${assumptionsBlock(r.assumptions)}</div></div>`.s;

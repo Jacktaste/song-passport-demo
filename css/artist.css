@@ -1,0 +1,116 @@
+/* Audius for artists: the home, Passport, Wallet and Release pieces from the design. Built on the app's tokens,
+   so the accent and dark mode follow app.css. Loaded by the artist views (see web/js/views/00-home.js). */
+.ah-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.ah-head h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.5rem); }
+.ah-alert { display: flex; align-items: center; gap: 18px; padding: 20px 24px; border-radius: 20px; background: var(--warn-soft); color: var(--fg); margin-bottom: 18px; text-decoration: none; }
+.ah-alert .bell { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.ah-alert .bell svg { width: 22px; height: 22px; }
+.ah-alert b { display: block; font: 700 20px/1.2 var(--display); letter-spacing: -.02em; color: color-mix(in srgb, var(--warn) 70%, var(--fg)); }
+.ah-alert span { display: block; font-size: 14.5px; margin-top: 3px; color: color-mix(in srgb, var(--warn) 55%, var(--fg)); }
+.ah-alert .grow { flex: 1; min-width: 0; }
+.ah-dark { background: var(--fg); color: var(--bg); border: 0; border-radius: 999px; padding: 12px 20px; font: 650 15px var(--sans); white-space: nowrap; cursor: pointer; text-decoration: none; }
+.ah-dark:hover { color: var(--bg); opacity: .9; }
+.ah-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.ah-tile { background: var(--surface); border-radius: 20px; padding: 20px 20px 18px; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: block; }
+.ah-tile .k { font-size: 14px; color: var(--muted); }
+.ah-tile .v { font: 750 32px/1.15 var(--display); letter-spacing: -.035em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ah-tile .s { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.ah-tile .s.good { color: var(--ok); font-weight: 600; }
+.ah-card { background: var(--surface); border-radius: 20px; padding: 22px 24px; box-shadow: var(--shadow-sm); }
+.ah-card h2 { font-size: 18px; letter-spacing: -.02em; margin-bottom: 16px; }
+.ah-bar { display: flex; gap: 3px; height: 28px; border-radius: 10px; overflow: hidden; }
+.ah-bar i { display: block; min-width: 6px; }
+.ah-legend { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 16px; font-size: 14.5px; }
+.ah-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.ah-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.ah-legend b { font-variant-numeric: tabular-nums; }
+.ah-two { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; margin-top: 18px; align-items: start; }
+.ah-songs { border-top: 1px solid var(--line); }
+.ah-song { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+.ah-song:last-child { border-bottom: 0; }
+.ah-song .art { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.ah-song .t { font-weight: 650; }
+.ah-song .m { font-size: 13px; color: var(--muted); }
+.ah-song .grow { flex: 1; min-width: 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 11px; font-size: 12.5px; font-weight: 650; white-space: nowrap; }
+.pill.miss { background: #FFF4E5; color: #8A4B00; } .pill.ok { background: #E6F4EC; color: #1E6B45; } .pill.wait { background: #EAF0FB; color: #1F4E9E; }
+:root[data-theme="dark"] .pill.miss { background: #3A2A10; color: #FBBF24; } :root[data-theme="dark"] .pill.ok { background: #0F2A1A; color: #4ADE80; } :root[data-theme="dark"] .pill.wait { background: #13213A; color: #93B4F5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.miss { background: #3A2A10; color: #FBBF24; } :root:not([data-theme="light"]) .pill.ok { background: #0F2A1A; color: #4ADE80; } :root:not([data-theme="light"]) .pill.wait { background: #13213A; color: #93B4F5; } }
+.ah-level { margin-bottom: 14px; }
+.ah-level .row { justify-content: space-between; font-size: 14.5px; }
+.ah-level .track { height: 8px; border-radius: 99px; background: var(--surface-3); margin-top: 6px; overflow: hidden; }
+.ah-level .track i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.ah-soft { display: block; width: 100%; text-align: center; border-radius: 999px; padding: 13px 18px; font: 650 15px var(--sans); background: var(--accent-soft); color: var(--accent-strong); text-decoration: none; border: 0; cursor: pointer; }
+.ah-soft:hover { color: var(--accent-strong); filter: brightness(.97); }
+.ah-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 13px 22px; font: 650 15px var(--sans); background: var(--accent); color: var(--accent-ink); border: 0; cursor: pointer; text-decoration: none; }
+.ah-cta:hover { color: var(--accent-ink); filter: brightness(1.05); }
+.ah-cta svg { width: 18px; height: 18px; }
+.ah-quiet { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+/* Passport: the split as a ring, with a row per person. */
+.pp-ring { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.pp-ring svg.ring { width: 132px; height: 132px; flex: none; }
+.pp-people { flex: 1; min-width: 220px; }
+.pp-person { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.pp-person:last-child { border-bottom: 0; }
+.pp-person .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.pp-person .grow { flex: 1; min-width: 0; }
+.pp-person .n { font-weight: 650; }
+.pp-person .r { font-size: 13px; color: var(--muted); }
+.pp-person .pc { font: 700 17px var(--display); font-variant-numeric: tabular-nums; }
+.pp-seal { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--ok-soft); color: var(--ok); font-weight: 600; font-size: 14px; }
+.pp-seal svg { width: 18px; height: 18px; flex: none; }
+.pp-seal a { margin-left: auto; color: inherit; text-decoration: underline; }
+.pp-regs { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.pp-reg { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-weight: 600; font-size: 14px; }
+.pp-reg .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.pp-reg .ic svg { width: 13px; height: 13px; }
+.pp-reg.ok .ic { background: var(--ok); color: #fff; }
+.pp-reg.miss { background: var(--warn-soft); }
+.pp-reg.miss .ic { background: var(--warn); color: #fff; }
+.pp-reg.unknown .ic { background: var(--surface-3); color: var(--muted); }
+.pp-note { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: var(--warn-soft); color: color-mix(in srgb, var(--warn) 60%, var(--fg)); font-size: 14px; }
+.pp-merch { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--surface-2); font-size: 14.5px; }
+.pp-merch svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.pp-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Wallet: today's money with its split bar, and the withdraw toggle. */
+.aw-item { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.aw-item:last-child { border-bottom: 0; }
+.aw-item .top { display: flex; justify-content: space-between; gap: 12px; }
+.aw-item .t { font-weight: 650; }
+.aw-item .a { font: 700 16px var(--display); font-variant-numeric: tabular-nums; }
+.aw-split { display: flex; gap: 2px; height: 8px; border-radius: 99px; overflow: hidden; margin: 10px 0 8px; }
+.aw-who { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.aw-who b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.aw-src { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.aw-src:last-child { border-bottom: 0; }
+.aw-src b { font-variant-numeric: tabular-nums; }
+.aw-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
+.aw-toggle button { border: 0; background: transparent; border-radius: 12px; padding: 12px 10px; font: 600 15px var(--sans); color: var(--muted); cursor: pointer; }
+.aw-toggle button small { display: block; font-size: 12.5px; font-weight: 500; margin-top: 2px; }
+.aw-toggle button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-sm); }
+.aw-payline { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; }
+
+/* Release: the ready checklist. */
+.rl-check { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.rl-check:last-child { border-bottom: 0; }
+.rl-check .ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--ok); color: #fff; }
+.rl-check .ic svg { width: 15px; height: 15px; }
+.rl-check.todo .ic { background: var(--surface-3); color: var(--muted); }
+.rl-check .grow { flex: 1; min-width: 0; }
+.rl-check .t { font-weight: 650; }
+.rl-check .s { font-size: 13px; color: var(--muted); }
+.rl-insiders { display: flex; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 16px; background: var(--accent-soft); }
+.rl-insiders svg { width: 22px; height: 22px; color: var(--accent-strong); flex: none; }
+.rl-insiders b { display: block; }
+.rl-insiders span { font-size: 13.5px; color: var(--muted); }
+
+@media (max-width: 1100px) { .ah-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ah-two { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .ah-alert { flex-wrap: wrap; padding: 18px; }
+  .ah-alert .ah-dark { width: 100%; text-align: center; }
+  .ah-tile .v { font-size: 26px; }
+  .ah-tiles { gap: 10px; }
+  .ah-card { padding: 18px; }
+}

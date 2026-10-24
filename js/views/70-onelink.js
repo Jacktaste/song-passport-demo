@@ -1,10 +1,10 @@
 // One Link: the artist's editor (/onelink), the public page listeners see (/l/:handle) and the listener's
 // own Listener Keys (/key). Everything a listener buys here pays into the Song Wallet.
-import { app, html, raw, api, toast, modal, money, ago, date, on, busy, formData, esc } from '../app.js';
+import { app, html, raw, api, toast, modal, money, ago, date, on, busy, formData, esc, comingBar } from '../app.js';
 import { ico, KIND, cover, initialsOf, sheet, whereBar, copyText, shortDate } from '../pl.js';
 
-app.nav({ id: 'onelink', label: 'One Link', href: '/onelink', icon: 'link', section: 'Listeners', order: 60, auth: true });
-app.nav({ id: 'key', label: 'Listener Key', href: '/key', icon: 'key', section: 'Listeners', order: 61, auth: true });
+app.nav({ id: 'onelink', label: 'One Link', href: '/onelink', icon: 'link', section: 'Listeners', order: 60, auth: true , artist: true, soon: true });
+app.nav({ id: 'key', label: 'Listener Key', href: '/key', icon: 'key', section: 'Listeners', order: 61, auth: true, soon: true });
 
 const SERVICES = [['audius', 'Audius', '#7E1BCC', 'A'], ['spotify', 'Spotify', '#1DB954', 'S'], ['apple', 'Apple Music', '#FA2D48', ''], ['youtube', 'YouTube', '#FF0000', '▶']];
 const priceLabel = b => b.kind === 'membership' ? `${money(b.price_minor)}/mo` : money(b.price_minor);
@@ -142,7 +142,7 @@ function unlockedSheet(d, b, r) {
   });
 }
 
-function checkoutSheet(d, b, handle) {
+export function checkoutSheet(d, b, handle) {
   return sheet((el, close) => {
     let qty = 1, amount = b.kind === 'tip' ? (b.amounts?.[1] ?? 500) : b.price_minor;
     const k = KIND[b.kind];
@@ -231,6 +231,7 @@ app.route('/onelink', async ({ el, query, user }) => {
     else if (tab === 'listeners') body = await listenersTab(pid);
     else body = await salesTab(pid);
     el.innerHTML = html`
+    ${comingBar('One Link')}
     <div class="page-head" style="align-items:center">
       <div><h1>One Link</h1></div>
       <div class="row"><div class="seg">${[['page', 'Page'], ['listeners', 'Listeners'], ['sales', 'Sales']].map(([k, l]) => html`<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${l}</button>`)}</div></div>

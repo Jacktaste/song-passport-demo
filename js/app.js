@@ -79,6 +79,8 @@ export const app = {
   refresh() { route(); },
   get user() { return current.user; },
   get artists() { return current.artists; },
+  // Signed-in people with no songs are listeners: nav items marked { artist: true } are hidden for them.
+  get isArtist() { return !!current.isArtist; },
   get meta() { return current.meta; },
   async reloadMe() { await loadMe(); paintShell(); },
   // Public pages (signing, verification) render without the sidebar.
@@ -145,15 +147,16 @@ async function route() {
 async function loadMe() {
   try {
     const me = await api('/api/me');
-    current.user = me.account; current.artists = me.artists || []; current.unread = me.unread || 0;
+    current.user = me.account; current.artists = me.artists || []; current.unread = me.unread || 0; current.isArtist = !!me.is_artist;
   } catch { current.user = null; }
 }
 
 // Bottom tab bar on phones: the five places people go most.
 const TABS = [
-  { href: '/home', label: 'Home', icon: 'home' }, { href: '/songs', label: 'My songs', icon: 'music', auth: true },
-  { href: '/search', label: 'Find', icon: 'search' }, { href: '/send', label: 'Send', icon: 'sign' },
-  { href: '/wallet', label: 'Wallet', icon: 'wallet', auth: true }, { href: '/signin', label: 'Sign in', icon: 'key', guest: true }
+  { href: '/home', label: 'Home', icon: 'home' }, { href: '/songs', label: 'My songs', icon: 'music', auth: true, artist: true },
+  { href: '/listen', label: 'Listen', icon: 'play', listener: true },
+  { href: '/search', label: 'Find', icon: 'search' }, { href: '/send', label: 'Send', icon: 'sign', artist: true },
+  { href: '/wallet', label: 'Wallet', icon: 'wallet', auth: true, artist: true }, { href: '/signin', label: 'Sign in', icon: 'key', guest: true }
 ];
 function paintShell() {
   const root = document.getElementById('app');
@@ -161,7 +164,8 @@ function paintShell() {
   const keep = root.querySelector('.shell #view');
   const u = current.user;
   const sections = [];
-  for (const n of navItems.filter(n => !n.auth || u).filter(n => !n.admin || u?.role === 'admin').sort((a, b) => a.order - b.order)) {
+  const artistOk = n => !n.artist || !u || current.isArtist;
+  for (const n of navItems.filter(n => !n.auth || u).filter(n => !n.admin || u?.role === 'admin').filter(artistOk).sort((a, b) => a.order - b.order)) {
     let s = sections.find(x => x.name === n.section);
     if (!s) sections.push(s = { name: n.section, items: [] });
     s.items.push(n);
@@ -171,7 +175,7 @@ function paintShell() {
     <aside class="sidebar">
       <a class="brand" href="#/home"><span class="brand-mark">${icon('audius')}</span><span>Audius<small>Song Passport</small></span></a>
       <nav class="nav" aria-label="Sections">
-        ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}</div>
+        ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}${s.items.every(n => n.soon) ? html` <span class="soon">Coming</span>` : ''}</div>
           ${s.items.map(n => html`<a href="#${n.href}" data-href="${n.href}">${icon(n.icon || 'dot')}<span>${n.label}</span>${n.badge ? html`<span class="count">${n.badge()}</span>` : ''}</a>`)}`)}
       </nav>
       <div class="sidebar-foot">
@@ -193,7 +197,7 @@ function paintShell() {
       </header>
       <main class="page" id="view"></main>
     </div>
-    <nav class="tabbar" aria-label="Main">${TABS.filter(t => (!t.auth || u) && !(t.guest && u)).slice(0, 5).map(t => html`<a href="#${t.href}" data-href="${t.href}">${icon(t.icon)}<span>${t.label}</span></a>`)}</nav>
+    <nav class="tabbar" aria-label="Main">${TABS.filter(t => (!t.auth || u) && !(t.guest && u) && artistOk(t) && !(t.listener && (!u || current.isArtist))).slice(0, 5).map(t => html`<a href="#${t.href}" data-href="${t.href}">${icon(t.icon)}<span>${t.label}</span></a>`)}</nav>
   </div>`.s;
   if (keep) root.querySelector('#view').replaceWith(keep);
   markActive(parseHash().path);
@@ -230,6 +234,9 @@ addEventListener('scroll', () => document.querySelector('.topbar')?.classList.to
 // ---------- UI helpers ----------
 // One toast at a time: a new one replaces the current one.
 let toastTimer;
+// Products that aren't launched yet (One Link, Business, listening): a quiet early-access line at the top of their screens.
+export const comingBar = what => html`<div class="soon-bar" role="note"><span class="soon">Coming</span><span>${what} is an early-access preview. Song Passport is what's live today.</span></div>`;
+
 export function toast(msg, { error = false, ms = 2000 } = {}) {
   const box = document.getElementById('toasts');
   box.innerHTML = '';

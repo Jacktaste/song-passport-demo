@@ -1,8 +1,9 @@
 // Song Wallet: the money side. Dashboard (#/wallet), statement import review, monthly statements, receipts,
 // and the per-song Wallet tab. Every figure comes from the double-entry ledger on the server.
+import { useArtistCss } from './00-home.js';
 import { app, html, raw, api, toast, modal, icon, on, busy, confirmDialog, formData, money, pct, date, dateTime, ago, art, statusBadge, colorFor, initials, shareColors, esc, infoTip } from '../app.js';
 
-app.nav({ id: 'wallet', label: 'Wallet', href: '/wallet', icon: 'wallet', section: 'Money', order: 10, auth: true });
+app.nav({ id: 'wallet', label: 'Wallet', href: '/wallet', icon: 'wallet', section: 'Money', order: 10, auth: true , artist: true });
 app.nav({ id: 'unclaimed', label: 'Unclaimed property', href: '/wallet/admin/unclaimed', icon: 'lock', section: 'Admin', order: 92, auth: true, admin: true });
 
 const SOURCES = ['Spotify', 'Apple Music', 'YouTube', 'Audius', 'ASCAP', 'BMI', 'SESAC', 'MLC', 'SoundExchange', 'Sync', 'Tips', 'PRS', 'PPL', 'Other'];
@@ -179,8 +180,13 @@ function allocRows(f, { showSong = false } = {}) {
 
 // ---------- dashboard ----------
 app.route('/wallet', async ({ el, query }) => {
-  const d = await api('/api/wallet');
+  useArtistCss();
+  const [d, month] = await Promise.all([api('/api/wallet'), api('/api/my/month').catch(() => null)]);
   const cur = d.currencies.includes(query.get('cur')) ? query.get('cur') : d.currencies[0];
+  // The latest payments, each with how it was split between everyone on the song.
+  const latestIds = [...new Set(d.recent.filter(a => a.currency === cur).map(a => a.income_id))].slice(0, 3);
+  const latest = (await Promise.all(latestIds.map(i => api(`/api/wallet/income/${i}`).catch(() => null)))).filter(Boolean);
+  let method = 'bank';
   const avail = d.balances[cur] || 0;
   const pending = d.pending[cur] || 0;
   const held = d.held.filter(h => h.currency === cur);
@@ -206,8 +212,8 @@ app.route('/wallet', async ({ el, query }) => {
         ${sim ? html`<span class="badge plain wl-badge" title="Payouts are recorded in the ledger but no money moves until Stripe is connected">Simulated payouts</span>` : ''}
       </div>
       <div class="wl-amount" style="position:relative;z-index:1">${fmt(avail, cur)}</div>
+      ${month?.splitWith?.length ? html`<div style="position:relative;z-index:1;margin-top:4px;font-weight:600;opacity:.9">${sameDay(month.splitWith)}</div>` : ''}
       <div class="row wrap" style="gap:10px;margin-top:14px">
-        <button class="btn btn-white btn-lg" data-act="withdraw" ${avail < d.payout.fees.minimumPayout ? 'disabled' : ''}>${icon('bank')} Withdraw</button>
         <a class="btn btn-glass btn-lg" href="#/wallet/statements/${d.thisMonth}?cur=${cur}">${icon('receipt')} Statement</a>
       </div>
       <div class="wl-hero-row">
@@ -215,8 +221,19 @@ app.route('/wallet', async ({ el, query }) => {
         <div><b>${fmt(heldTotal, cur)}</b><span>Held for signatures</span></div>
         <div><b>${fmt(lifetime, cur)}</b><span>Earned in the last 12 months</span></div>
       </div>
-      ${avail > 0 && avail < d.payout.fees.minimumPayout ? html`<p class="small muted" style="margin-top:12px;position:relative;z-index:1">You can withdraw once you reach ${fmt(d.payout.fees.minimumPayout, cur)}.</p>` : ''}
     </div>
+
+    <section class="ah-card" aria-labelledby="wd-h">
+      <div class="eyebrow" id="wd-h" style="margin-bottom:10px">Withdraw to</div>
+      <div class="aw-toggle" role="radiogroup">
+        <button role="radio" aria-checked="true" class="on" data-method="bank">${icon('bank')} Bank<small>${d.payout.releaseDiscount ? '1%' : '1.5%'} fee · from ${fmt(d.payout.fees.minimumPayout, cur)}</small></button>
+        <button role="radio" aria-checked="false" data-method="audio">${icon('audius')} AUDIO<small>0.5% fee · any amount</small></button>
+      </div>
+      <button class="ah-cta" style="width:100%;margin-top:12px" data-act="withdraw" ${avail > 0 ? '' : 'disabled'}>Withdraw ${fmt(avail, cur)}</button>
+      <div class="aw-payline" id="wd-note">${payLine(d, cur, avail)}</div>
+    </section>
+
+    ${latest.length ? html`<section class="ah-card"><h2>Latest payments</h2>${latest.map(r => splitItem(r, cur))}</section>` : ''}
 
     ${held.length ? html`<div class="wl-held">
       <span class="wl-ico">${icon('clock')}</span>
@@ -259,7 +276,7 @@ app.route('/wallet', async ({ el, query }) => {
             <div class="sub" style="white-space:normal">${o.status === 'due' ? (o.breakdown?.length ? o.breakdown.map(b => `${b.name} ${money(b.amount, o.currency)}`).join(' · ') : o.reason) : 'Waiting for the split to be signed. ' + o.reason}</div></div>
             ${o.status === 'due' ? html`<button class="btn btn-sm" data-settle="${o.id}">Mark paid</button>` : statusBadge('pending')}</div>`)}
         </div></div>` : ''}
-        ${d.payouts.length ? html`        <div class="card"><div class="card-head"><h2 class="h3">Payouts</h2>${avail >= d.payout.fees.minimumPayout ? html`<button class="btn btn-sm" data-act="withdraw">Withdraw</button>` : ''}</div>
+        ${d.payouts.length ? html`        <div class="card"><div class="card-head"><h2 class="h3">Payouts</h2>${avail > 0 ? html`<button class="btn btn-sm" data-act="withdraw">Withdraw</button>` : ''}</div>
           ${d.payouts.length ? html`<div class="list">${d.payouts.map(p => html`<div class="list-item"><span class="avatar sm" style="background:${p.method === 'audio' ? 'var(--violet)' : 'var(--fg-2)'}">${icon(p.method === 'audio' ? 'audius' : 'bank')}</span>
             <div class="grow"><div class="title wl-money">${fmt(p.net, p.currency)}</div><div class="sub">${p.method === 'audio' ? 'AUDIO' : 'Bank'} · fee ${fmt(p.fee, p.currency)} · ${ago(p.created_at)}${p.failure_reason ? ' · ' + p.failure_reason : ''}</div></div>
             ${p.status === 'requested' ? statusBadge('pending') : statusBadge(p.status)}${p.driver === 'simulated' ? simBadge('Sim') : ''}</div>`)}</div>`
@@ -272,7 +289,7 @@ app.route('/wallet', async ({ el, query }) => {
         <div class="card card-pad fees"><div class="fees-big"><b>0%</b><span class="quiet">on money coming in</span></div>
           <div class="fees-row"><span>Bank payout</span><b class="num">${d.payout.releaseDiscount ? '1%' : '1.5%'}</b></div>
           <div class="fees-row"><span>${icon('audius')} AUDIO payout</span><b class="num">0.5%</b></div>
-          <div class="fees-foot quiet">Minimum payout ${fmt(d.payout.fees.minimumPayout, cur)} ${infoTip(`Bank payouts are ${d.payout.releaseDiscount ? '1% (reduced because you released through us)' : '1.5% (1% when you release through us)'}, minimum 25¢. AUDIO payouts are optional and cost 0.5% because the network costs less to send on; there are no rewards for buying or holding AUDIO. Payouts are made by our licensed payments partner (Stripe Connect or Trolley).`, 'About fees')}</div></div>
+          <div class="fees-foot quiet">Bank payouts from ${fmt(d.payout.fees.minimumPayout, cur)}, AUDIO at any amount ${infoTip(`Bank payouts are ${d.payout.releaseDiscount ? '1% (reduced because you released through us)' : '1.5% (1% when you release through us)'}, minimum 25¢. AUDIO payouts are optional and cost 0.5% because the network costs less to send on; there are no rewards for buying or holding AUDIO. Payouts are made by our licensed payments partner (Stripe Connect or Trolley).`, 'About fees')}</div></div>
         ${d.imports.length ? html`<div class="card"><div class="card-head"><h2 class="h3">Statement imports</h2><a class="btn btn-sm" href="#/wallet/import">New</a></div><div class="list">
           ${d.imports.map(i => html`<a class="list-item" href="#/wallet/import/${i.id}">${icon('file')}<div class="grow"><div class="title">${i.filename}</div><div class="sub">${i.line_count} lines · ${ago(i.created_at)}</div></div>${statusBadge(i.status === 'posted' ? 'approved' : 'pending')}</a>`)}
         </div></div>` : ''}
@@ -281,7 +298,12 @@ app.route('/wallet', async ({ el, query }) => {
   </div>`);
   on(root, 'click', '[data-cur]', (e, b) => app.go(`/wallet?cur=${b.dataset.cur}`));
   on(root, 'click', 'tr[data-href]', (e, tr) => app.go(tr.dataset.href));
-  on(root, 'click', '[data-act=withdraw]', () => d.payee.ready ? withdraw(d, cur, avail) : payeeSetup(d));
+  on(root, 'click', '[data-act=withdraw]', () => d.payee.ready ? withdraw(d, cur, avail, method) : payeeSetup(d));
+  on(root, 'click', '[data-method]', (e, b) => {
+    method = b.dataset.method;
+    root.querySelectorAll('[data-method]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
+    root.querySelector('#wd-note').textContent = payLine(d, cur, avail, method);
+  });
   on(root, 'click', '[data-act=payee]', () => payeeSetup(d));
   on(root, 'click', '[data-settle]', async (e, b) => {
     if (!await confirmDialog('Mark as paid?', 'Confirm you have paid each contributor what this payment owed them, outside the wallet.', 'Mark paid')) return;
@@ -292,6 +314,31 @@ app.route('/wallet', async ({ el, query }) => {
     setTimeout(() => { if (location.hash.split('?')[0] === '#/wallet') app.refresh(); }, 3500);
   }
 }, { auth: true, title: 'Wallet' });
+
+// "Theo and Mae were paid their share the same day."
+function sameDay(names) {
+  const who = names.length > 2 ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more` : names.join(' and ');
+  return `${who} ${names.length === 1 ? 'was' : 'were'} paid their share the same day`;
+}
+
+// One quiet line under the withdraw button: the next automatic payout, or how close the bank minimum is. AUDIO has no minimum.
+function payLine(d, cur, avail, method = 'bank') {
+  const ps = d.payout_schedule, min = ps?.threshold_minor ?? d.payout.fees.minimumPayout;
+  if (method === 'audio') return 'AUDIO payouts work at any amount.';
+  if (ps?.eligible && ps.next_date) return `Next payout · ${new Date(ps.next_date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  if (ps && !ps.eligible) return `Payouts start at ${fmt(min, cur)} · ${fmt(ps.balance_minor ?? avail, cur)} so far, rolls over`;
+  return d.payout.fees.autoPayout?.note || '';
+}
+
+// A payment with its split bar: what each person on the song got from it.
+function splitItem(r, cur) {
+  const inc = r.income, al = (r.family[0]?.allocations || []).filter(a => a.amount > 0);
+  const colors = al.map((_, i) => shareColors[i % shareColors.length]);
+  return html`<a class="aw-item" href="#/wallet/receipt/${inc.id}" style="display:block;color:inherit;text-decoration:none">
+    <div class="top"><div><div class="t">${inc.title}</div><div class="small muted">${inc.source} · ${ago(inc.created_at)}</div></div><div class="a">${fmt(inc.amount, inc.currency)}</div></div>
+    ${al.length > 1 ? html`<div class="aw-split">${al.map((a, i) => html`<i style="flex:${a.amount};background:${colors[i]}"></i>`)}</div>
+    <div class="aw-who">${al.map(a => html`<span>${a.name || 'Unnamed'} <b>${fmt(a.amount, a.currency)}</b></span>`)}</div>` : ''}</a>`;
+}
 
 function payeeCard(d) {
   const p = d.payee;
@@ -363,8 +410,10 @@ async function identityCheck() {
   });
 }
 
-function withdraw(d, cur, avail) {
+function withdraw(d, cur, avail, method = 'bank') {
   const major = (avail / 100).toFixed(2);
+  const min = d.payout.fees.minimumPayout;
+  if (avail < min) method = 'audio';   // bank payouts start at the minimum; AUDIO works at any amount
   let address = d.payout.walletAddress;
   modal({
     title: 'Withdraw',
@@ -373,8 +422,8 @@ function withdraw(d, cur, avail) {
         <div class="row"><input class="input mono" name="amount" inputmode="decimal" value="${major}" style="font-size:20px;font-weight:600"><button type="button" class="btn btn-sm" data-max>Max</button></div></label>
       <div class="field"><span>Send to</span>
         <div class="wl-method">
-          <label><input type="radio" name="method" value="bank" checked><span class="t">${icon('bank')} Bank account</span><span class="s">${d.payout.releaseDiscount ? '1%' : '1.5%'} fee, min 25¢ · 1 to 3 business days${d.payout.bank.driver === 'simulated' ? ' · simulated' : ''}</span></label>
-          <label><input type="radio" name="method" value="audio"><span class="t">${icon('audius')} AUDIO</span><span class="s">0.5% fee (lower network cost) · to your Solana wallet · optional</span></label>
+          <label><input type="radio" name="method" value="bank" ${method === 'bank' ? 'checked' : ''} ${avail < min ? 'disabled' : ''}><span class="t">${icon('bank')} Bank account</span><span class="s">${avail < min ? `From ${fmt(min, cur)} · ` : ''}${d.payout.releaseDiscount ? '1%' : '1.5%'} fee, min 25¢ · 1 to 3 business days${d.payout.bank.driver === 'simulated' ? ' · simulated' : ''}</span></label>
+          <label><input type="radio" name="method" value="audio" ${method === 'audio' ? 'checked' : ''}><span class="t">${icon('audius')} AUDIO</span><span class="s">0.5% fee (lower network cost) · to your Solana wallet · optional</span></label>
         </div></div>
       <label class="field hidden" id="wf-addr"><span>Solana wallet address</span><input class="input mono" name="wallet_address" value="${address || ''}" placeholder="e.g. 9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"></label>
       <div id="wf-quote"></div>
@@ -407,7 +456,7 @@ function withdraw(d, cur, avail) {
             box.innerHTML = html`<div class="wl-quote"><span>You withdraw</span><span class="wl-money">${fmt(q.amount, cur)}</span>
               <span class="muted">Fee (${x.rule.note})</span><span class="wl-money muted">−${fmt(x.fee, cur)}</span>
               <span class="tot">You receive</span><span class="tot wl-money">${fmt(x.net, cur)}</span></div>
-              ${q.amount < d.payout.fees.minimumPayout ? html`<p class="small" style="color:var(--crit);margin-top:6px">Minimum payout is ${fmt(d.payout.fees.minimumPayout, cur)}</p>` : q.amount > avail ? html`<p class="small" style="color:var(--crit);margin-top:6px">More than your available balance</p>` : ''}`.s;
+              ${f.method === 'bank' && q.amount < d.payout.fees.minimumPayout ? html`<p class="small" style="color:var(--crit);margin-top:6px">Bank payouts start at ${fmt(d.payout.fees.minimumPayout, cur)}</p>` : q.amount > avail ? html`<p class="small" style="color:var(--crit);margin-top:6px">More than your available balance</p>` : ''}`.s;
           } catch { box.innerHTML = ''; }
         }, 150);
       };

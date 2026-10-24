@@ -1,5 +1,6 @@
 // The passport page for one song: header, then tabs registered by each product area (app.songTab).
 // This file provides the Overview and History tabs.
+import { useArtistCss } from './00-home.js';
 import { app, shownTitle, html, raw, api, shareLink, icon, term, art, artUrl, statusBadge, date, dateTime, ago, duration, on, modal, toast, formData, busy, esc, infoTip, moreMenu, ring, personRow, uploadImage } from '../app.js';
 
 app.route('/song/:id', async ({ el, params, query, user }) => {
@@ -56,6 +57,38 @@ app.route('/song/:id', async ({ el, params, query, user }) => {
 }, { title: 'Song', skeleton: 'song' });
 
 // ---------- Overview ----------
+// The Song Passport at a glance: the signed split as a ring with a row per person, the seal, linked merch and the next step.
+const SPLIT_COLORS = ['#7E1BCC', '#2F6FDB', '#E07038', '#1E9E78', '#B8901E', '#C2185B', '#5B6B7F'];
+function passportCard(song, sp, merch, canManage, mlcState) {
+  const cur = sp?.current, open = sp?.open;
+  const lines = (cur || open)?.lines || [];
+  if (!lines.length) return '';
+  const key = lines.some(l => l.master_bps > 0) ? 'master_bps' : 'publishing_bps';
+  const total = lines.reduce((a, l) => a + (l[key] || 0), 0);
+  let off = 0;
+  const R = 52, C = 2 * Math.PI * R;
+  const arcs = lines.filter(l => l[key] > 0).map((l, i) => { const len = l[key] / 10000 * C; const a = html`<circle cx="66" cy="66" r="${R}" fill="none" stroke="${SPLIT_COLORS[i % SPLIT_COLORS.length]}" stroke-width="16" stroke-dasharray="${Math.max(0, len - 2)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 66 66)"/>`; off += len; return a; });
+  const pc = bps => `${Math.round(bps / 10) / 10}%`.replace('.0%', '%');
+  const signed = cur ? (cur.signatures || []).length || lines.length : 0;
+  const sealed = cur?.executed_at ? new Date(cur.executed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  return html`<section class="card card-pad" style="margin-bottom:16px" aria-labelledby="pp-h">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px"><h2 class="h3" id="pp-h">Who gets paid</h2><span class="quiet small">${key === 'master_bps' ? 'Recording' : 'Songwriting'} split</span></div>
+    <div class="pp-ring">
+      <svg class="ring" viewBox="0 0 132 132" role="img" aria-label="Split adds up to ${pc(total)}"><circle cx="66" cy="66" r="${R}" fill="none" stroke="var(--surface-3)" stroke-width="16"/>${arcs}
+        <text x="66" y="64" text-anchor="middle" font-size="22" font-weight="800" fill="currentColor">${pc(total)}</text><text x="66" y="84" text-anchor="middle" font-size="11" fill="var(--muted)">${total === 10000 ? 'adds up' : 'so far'}</text></svg>
+      <div class="pp-people">${lines.filter(l => l[key] > 0).map((l, i) => html`<div class="pp-person"><span class="dot" style="background:${SPLIT_COLORS[i % SPLIT_COLORS.length]}"></span>
+        <div class="grow"><div class="n">${l.name}</div><div class="r">${(Array.isArray(l.roles) ? l.roles : []).join(', ')}${key === 'master_bps' && l.publishing_bps ? ` · ${pc(l.publishing_bps)} songwriting` : ''}</div></div><span class="pc">${pc(l[key])}</span></div>`)}</div>
+    </div>
+    ${cur ? html`<div class="pp-seal">${icon('check')} Signed by all ${signed}${sealed ? ` · sealed ${sealed}` : ''}<a href="#/certificate/${cur.id}">Certificate</a></div>`
+      : html`<div class="pp-note">Waiting on signatures. Money that arrives is held until everyone agrees.</div>`}
+    ${mlcState !== 'done' && mlcState !== 'na' ? html`<div class="pp-note">${song.title} isn’t registered with The MLC yet. Songwriter money from US streams may be waiting there.</div>` : ''}
+    ${merch.length ? html`<div class="pp-merch" style="margin-top:12px">${icon('link')}<div><b>${merch[0].title}</b> is linked · Every sale pays this same split</div></div>` : ''}
+    ${canManage ? html`<div class="pp-actions" style="margin-top:16px">
+      ${mlcState !== 'done' && mlcState !== 'na' ? html`<button class="btn btn-primary" data-act="tile" data-org="MLC">Register with The MLC</button>` : ''}
+      <a class="btn" href="#/song/${song.id}?tab=splits">${icon('plus')} Add someone and send a signing link</a></div>` : ''}
+  </section>`;
+}
+
 // The six places a song should be registered. Tiles carry only a name and a dot; the sheet explains the rest.
 const ORGS = [
   ['PRO', "Songwriters' society", 'users', 'Pays songwriters when the song is played or streamed. In the US that is ASCAP, BMI, SESAC or GMR.'],
@@ -72,7 +105,9 @@ app.songTab({
   render: async ({ el, song, user, canManage, reload }) => {
     const regs = Object.fromEntries(song.registrations.map(r => [r.org, r]));
     // Auto-fill (07-enrich.js): where each value came from, and the registration checks.
-    const en = app.enrich, [st, cr] = await Promise.all([en?.load(song.id), api(`/api/songs/${song.id}/credits`).catch(() => null)]);
+    useArtistCss();
+    const en = app.enrich, [st, cr, sp, merch] = await Promise.all([en?.load(song.id), api(`/api/songs/${song.id}/credits`).catch(() => null),
+      song.status !== 'draft' ? api(`/api/songs/${song.id}/splits`).catch(() => null) : null, api(`/api/songs/${song.id}/merch`).catch(() => null)]);
     const mark = f => en ? en.mark(st, f) : '';
     const orgs = k => (cr?.orgs || []).filter(o => o.kind === k).map(o => o.name);
     const f = st?.fields || {}, found = st?.found || {};
@@ -123,8 +158,9 @@ app.songTab({
     const people = cr?.credits || [];
 
     el.innerHTML = html`
+    ${passportCard(song, sp, merch?.items || [], canManage, stateOf('MLC'))}
     <section class="card health" aria-labelledby="health-h">
-      <div class="health-sum">${ring(done, counted.length)}<div><h2 class="h3" id="health-h">Passport health</h2><p class="quiet">${done === counted.length ? 'Everything is in place.' : `${counted.length - done} ${counted.length - done === 1 ? 'place' : 'places'} to check`}</p></div></div>
+      <div class="health-sum">${ring(done, counted.length)}<div><h2 class="h3" id="health-h">Registered where money is collected</h2><p class="quiet">${done === counted.length ? 'Everything is in place.' : `${counted.length - done} ${counted.length - done === 1 ? 'place' : 'places'} to check`}</p></div></div>
       <div class="tiles">${tiles.map(t => html`<button class="tile" data-act="tile" data-org="${t.org}" aria-label="${t.name}: ${STATE_TEXT[t.state]}">
         <span class="tile-ic">${icon(t.ic)}</span><span class="tile-name">${t.name}</span><span class="sdot ${t.state}" aria-hidden="true"></span></button>`)}</div>
     </section>

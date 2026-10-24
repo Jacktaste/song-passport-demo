@@ -1011,7 +1011,7 @@ app.route('/verify', async ({ el, query }) => {
 // ======================================================================
 // Signatures queue
 // ======================================================================
-app.nav({ id: 'signatures', label: 'Signatures', href: '/signatures', icon: 'sign', section: 'Passport', order: 20, auth: true });
+app.nav({ id: 'signatures', label: 'Signatures', href: '/signatures', icon: 'sign', section: 'Passport', order: 20, auth: true , artist: true });
 
 app.route('/signatures', async ({ el }) => {
   const load = () => api('/api/signatures');

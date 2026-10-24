@@ -5,7 +5,7 @@ import { app, html, api, toast, icon, on, busy, initials, colorFor, pct } from '
 import { shareLinksView, wireShareLinks } from './20-splits.js';
 import { confirmNewSong } from './10-discover.js';
 
-app.nav({ id: 'send', label: 'Send a split', href: '/send', icon: 'sign', section: 'Passport', order: 2 });
+app.nav({ id: 'send', label: 'Send a split', href: '/send', icon: 'sign', section: 'Passport', order: 2 , artist: true });
 
 const KEY = 'ob-quick-split';
 let lastResult = null;

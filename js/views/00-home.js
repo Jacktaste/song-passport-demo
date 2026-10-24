@@ -4,17 +4,31 @@ import { app, shownTitle, html, api, icon, art, statusBadge, money, ago, on, for
 import { confirmNewSong } from './10-discover.js';
 
 app.nav({ id: 'home', label: 'Home', href: '/home', icon: 'home', section: 'Passport', order: 0 });
-app.nav({ id: 'songs', label: 'My songs', href: '/songs', icon: 'music', section: 'Passport', order: 1, auth: true });
+app.nav({ id: 'songs', label: 'My songs', href: '/songs', icon: 'music', section: 'Passport', order: 1, auth: true , artist: true });
 
 const soft = p => p.catch(() => null);
+// The artist screens' stylesheet (home, Passport, Wallet, Release), loaded once.
+export function useArtistCss() {
+  if (document.querySelector('link[data-ah]')) return;
+  const l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = 'css/artist.css'; l.dataset.ah = '1';
+  document.head.appendChild(l);
+}
+// Where money came from, one colour each (the same in the bar and the legend).
+export const SOURCE_COLOR = { plays: '#7E1BCC', owned: '#2F6FDB', pass: '#E07038', tips: '#1E9E78', merch: '#B8901E', licensing: '#5B6B7F', stores: '#0EA5A4', songwriting: '#C2185B', other: '#A1A1AA' };
+// "about $4,200": estimates are rounded, never shown to the cent.
+export const about = minor => { const d = minor / 100; const r = d >= 1000 ? Math.round(d / 100) * 100 : d >= 100 ? Math.round(d / 10) * 10 : Math.round(d); return '$' + r.toLocaleString('en-US'); };
 const fmt = n => new Intl.NumberFormat('en-US', { notation: n > 99999 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(n || 0);
 
-app.route('/home', async ({ el, user }) => {
+app.route('/home', async ({ el, user, query }) => {
   const meta = app.meta || {};
   if (!user) return welcome(el, meta);
+  // Listeners (no songs yet) live in Audius. "?artist=1" opens the artist start page to find and claim songs.
+  if (!app.isArtist && !query.get('artist')) return app.go('/listen');
 
-  const [mine, gaps, wallet, sigs, cred] = await Promise.all([
-    api('/api/my/songs'), soft(api('/api/my/gaps')), soft(api('/api/wallet/summary')), soft(api('/api/signatures/mine')), soft(api('/api/my/credits'))
+  useArtistCss();
+  const [mine, gaps, wallet, sigs, cred, month] = await Promise.all([
+    api('/api/my/songs'), soft(api('/api/my/gaps')), soft(api('/api/wallet/summary')), soft(api('/api/signatures/mine')), soft(api('/api/my/credits')), soft(api('/api/my/month'))
   ]);
   // Songs a name I've claimed is credited on (producer, writer, engineer...) that I'm not on the split for yet.
   const credited = cred?.items || [];
@@ -41,16 +55,16 @@ app.route('/home', async ({ el, user }) => {
     { done: sent, title: 'Send a split', sub: 'Made something new? Everyone on it gets one link and taps Agree. No account needed.', href: managed.length ? `#/song/${managed[0].id}?tab=splits` : '#/send', cta: 'Send a split', icon: 'sign' }
   ] : [
     { done: songs.length > 0, title: 'Find your songs', sub: 'Search your name. Most songs are already here as drafts, with who produced and wrote them.', href: '#/search', cta: 'Find my songs', icon: 'search' },
-    { done: managed.length > 0, title: 'Claim them', sub: 'Prove they’re yours with a distributor statement. Usually instant.', href: songs.length ? `#/song/${songs[0].id}` : '#/search', cta: 'Claim a song', icon: 'flag' },
-    { done: sent, title: 'Send a split', sub: 'Everyone on the song gets one link and taps Agree. No account needed.', href: managed.length ? `#/song/${managed[0].id}?tab=splits` : '#/send', cta: 'Send a split', icon: 'sign' }
+    { done: managed.length > 0, title: 'See who’s on them', sub: 'Claim a song to see everyone credited on it. Usually instant.', href: songs.length ? `#/song/${songs[0].id}` : '#/search', cta: 'Claim a song', icon: 'flag' },
+    { done: sent, title: 'Get everyone paid', sub: 'Everyone on the song gets one link and taps Agree. Money then splits the same day.', href: managed.length ? `#/song/${managed[0].id}?tab=splits` : '#/send', cta: 'Send a split', icon: 'sign' }
   ];
   const nextStep = steps.findIndex(x => !x.done);
   const guide = nextStep >= 0;
 
   el.innerHTML = html`
-  <div class="page-head"><div><h1>${greet}, ${name}.</h1><p class="lede">${crew ? 'Every song you’re credited on, in one place.' : 'Every song you’re on, in one place.'} ${infoTip('One passport per song. Invite everyone on the song with one link, everyone signs the split once, every code and registration lives on the passport, and money lands in the Song Wallet and is split the same day.', 'How it works')}</p></div>
-    <div class="row"><a class="btn" href="#/search">${icon('search')} Find my songs</a><a class="btn ${guide ? '' : 'btn-primary'}" href="#/send">${icon('sign')} Send a split</a></div></div>
-
+  <div class="ah-head"><div><h1>${greet}, ${name}</h1><p class="muted" style="margin-top:6px">Find your songs, see who’s on them, get everyone paid.</p></div>
+    <div class="row"><a class="btn" href="#/send">${icon('sign')} Send a split</a><a class="ah-cta" href="#/releases/new">${icon('plus')} Release a song</a></div></div>
+  ${moneyAlert(gaps)}
   ${guide ? html`<section class="card steps" style="margin-bottom:24px" aria-label="Get started">
     ${steps.map((x, i) => html`<a class="step ${x.done ? 'done' : ''} ${i === nextStep ? 'next' : ''}" href="${x.href}">
       <span class="step-n" aria-hidden="true">${x.done ? icon('check') : String(i + 1)}</span>
@@ -61,20 +75,14 @@ app.route('/home', async ({ el, user }) => {
     <div class="grow" style="flex:1"><b>${waiting.length} split${waiting.length > 1 ? 's' : ''} waiting for your signature</b></div>
     <span class="btn btn-sm">Review ${icon('arrow')}</span></a>` : ''}
 
-  <div class="grid grid-4" style="margin-bottom:18px">
-    <div class="card stat"><div class="label">${icon('music')} Songs</div><div class="value">${fmt(songs.length)}</div><div class="sub">${crew ? `${fmt(credited.length)} more credited` : `${songs.filter(s => s.manage).length} you manage`}</div></div>
-    <a class="card stat" href="#/wallet" style="color:inherit;text-decoration:none"><div class="label">${icon('wallet')} Available</div><div class="value money">${available ? money(available.amount, available.currency) : '$0.00'}</div><div class="sub">${held?.amount ? `${money(held.amount, held.currency)} waiting to be signed` : 'Ready to withdraw'}</div></a>
-    <a class="card stat" href="#/gaps" style="color:inherit;text-decoration:none"><div class="label">${icon('scan')} Money at risk</div><div class="value" style="color:${atRisk ? 'var(--crit)' : 'inherit'}">${atRisk === null ? '—' : money(atRisk)}</div><div class="sub">${gaps?.totals ? `${gaps.totals.songsWithGaps || 0} ${gaps.totals.songsWithGaps === 1 ? 'song needs' : 'songs need'} a fix` : 'Run the money check'}</div></a>
-    <a class="card stat" href="#/signatures" style="color:inherit;text-decoration:none"><div class="label">${icon('sign')} Signatures</div><div class="value">${fmt(waiting.length)}</div><div class="sub">${sigs?.sentPending?.length ? `${sigs.sentPending.length} you sent are pending` : 'Nothing outstanding'}</div></a>
-  </div>
-
+  ${month ? monthView(month, gaps) : ''}
   <div class="split-main ${app.artists.length ? '' : 'solo'}">
     <div class="stack-lg" style="min-width:0">
     ${credited.length ? html`<div class="card" id="credited"><div class="card-head"><div><h2 class="h3">Credited, not yet on the split</h2>
       <div class="small muted" style="white-space:normal">Public credits name you on ${credited.length === 1 ? 'this song' : `these ${fmt(credited.length)} ${WORK[persona]}`}. A credit isn’t a split: ask to be added so you’re paid.</div></div></div>
       <div class="list">${credited.slice(0, 8).map(creditRow)}</div>
       ${credited.length > 8 ? html`<div class="row" style="justify-content:center;padding:14px"><a class="btn btn-sm" href="#/artist/${app.artists[0]?.id || ''}?tab=credits">See all ${fmt(credited.length)}</a></div>` : ''}</div>` : ''}
-    ${songs.length || !credited.length ? html`<section class="card">
+    ${(songs.length || !credited.length) && !month?.songs?.length ? html`<section class="card">
       <div class="card-head"><h2 class="h3">Recent songs</h2>${songs.length ? html`<a class="btn btn-ghost btn-sm" href="#/songs">See all</a>` : ''}</div>
       ${songs.length ? html`<div class="covers">${songs.slice(0, 8).map(coverTile)}</div>`
         : html`<div class="empty"><div class="icon">${icon('music')}</div><h2 class="h3">No songs yet</h2><p>Search for your name to claim the songs already waiting for you.</p>
@@ -87,6 +95,55 @@ app.route('/home', async ({ el, user }) => {
   </div>`.s;
   on(el, 'click', '[data-act=invite]', (e, b) => shareLink(`${location.origin}/#/claim/song/${b.dataset.id}`, { title: b.dataset.title, label: 'Claim link' }));
 }, { title: 'Home' });
+
+// The money at stake, first: from the money check. A dollar figure only when the check is confident of it.
+function moneyAlert(gaps) {
+  const t = gaps?.totals;
+  if (!t?.songsWithGaps && !t?.toCheck) return '';
+  const sure = t.atRiskMinor > 0 && (!t.confidence || t.confidence === 'high');
+  const worst = [...(gaps.songs || [])].filter(x => x.top?.length).sort((a, b) => (b.atRiskMinor || 0) - (a.atRiskMinor || 0))[0];
+  const n = sure ? (gaps.songs || []).filter(x => x.atRiskMinor > 0).length || t.songsWithGaps : t.toCheck || t.songsWithGaps;
+  const head = sure ? `${n} ${n === 1 ? 'song' : 'songs'} may be missing about ${about(t.atRiskMinor)}` : `${n} ${n === 1 ? 'thing' : 'things'} to check`;
+  const top = worst?.top[0];
+  const sub = top ? `${worst.title}: ${top.title}.${sure && worst.atRiskMinor ? ` About ${about(worst.atRiskMinor)} may be waiting there.` : ''}` : 'Run the money check to see where.';
+  const href = top?.action?.href ? '#' + top.action.href : '#/gaps';
+  return html`<div class="ah-alert" role="status"><div class="bell" aria-hidden="true">${icon('bell')}</div>
+    <div class="grow"><b>${head}</b><span>${sub}</span></div><a class="ah-dark" href="${href}">Fix it for me</a></div>`;
+}
+
+// This month at a glance: what was paid, who listened, passes, songs owned, where the money came from, songs and listeners.
+function monthView(m, gaps) {
+  const names = m.splitWith || [];
+  const splitLine = names.length ? `Already split with ${names.length > 2 ? `${names.slice(0, 2).join(', ')} and ${names.length - 2} more` : names.join(' and ')}` : 'Split the day it arrives';
+  const total = m.sources.reduce((a, x) => a + x.amount, 0);
+  const bySong = Object.fromEntries((gaps?.songs || []).map(g => [g.songId, g]));
+  const pill = s => {
+    if (s.status !== 'active') return html`<span class="pill wait">Waiting on signatures</span>`;
+    const g = bySong[s.id];
+    if (g?.top?.length) return html`<span class="pill miss">${g.top[0].code?.startsWith('REG_') ? 'Not registered' : 'Missing info'}</span>`;
+    return html`<span class="pill ok">All set</span>`;
+  };
+  const maxLevel = Math.max(1, ...m.levels.map(l => l.n));
+  return html`
+  <div class="ah-tiles">
+    <a class="ah-tile" href="#/wallet"><div class="k">Paid to you this month</div><div class="v">${money(m.paid, m.currency)}</div><div class="s ${m.paid ? 'good' : ''}">${m.paid ? splitLine : 'Nothing yet this month'}</div></a>
+    <div class="ah-tile"><div class="k">Listeners this month</div><div class="v">${fmt(m.listeners)}</div><div class="s">On Audius and your One Link</div></div>
+    <div class="ah-tile"><div class="k">Artist Passes</div><div class="v">${fmt(m.passes)}</div><div class="s">${m.passes ? `${money(m.passMonthly)} a month` : 'Listeners who back just you'}</div></div>
+    <div class="ah-tile"><div class="k">Songs bought to own</div><div class="v">${fmt(m.owned)}</div><div class="s">${money(m.ownedThisMonth)} this month</div></div>
+  </div>
+  ${total ? html`<section class="ah-card"><h2>Where this month’s money came from</h2>
+    <div class="ah-bar" role="img" aria-label="${m.sources.map(x => `${x.label} ${money(x.amount)}`).join(', ')}">${m.sources.map(x => html`<i style="flex:${x.amount};background:${SOURCE_COLOR[x.key]}"></i>`)}</div>
+    <div class="ah-legend">${m.sources.map(x => html`<span><i style="background:${SOURCE_COLOR[x.key]}"></i>${x.label} <b>${money(x.amount)}</b></span>`)}</div></section>` : ''}
+  <div class="ah-two">
+    <section class="ah-card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Your songs</h2><a class="small" href="#/songs">See all</a></div>
+      <div class="ah-songs">${m.songs.slice(0, 6).map(s => html`<a class="ah-song" href="#/song/${s.id}">${art(s.title + s.artist_credit, { label: s.title })}
+        <div class="grow"><div class="t">${s.title}</div><div class="m">${money(s.amount)} this month</div></div>${pill(s)}</a>`)}</div></section>
+    <section class="ah-card"><h2>Your listeners</h2>
+      ${m.levels.filter(l => l.name !== 'Listener' || l.n).map(l => html`<div class="ah-level"><div class="row"><b>${l.name}</b><span class="muted">${fmt(l.n)}</span></div>
+        <div class="track"><i style="width:${Math.round(l.n / maxLevel * 100)}%"></i></div></div>`)}
+      <a class="ah-soft" href="#/onelink">Start a presale for Insiders</a></section>
+  </div>`;
+}
 
 // A credited song: claimed ones get "Ask to be added" (the owner decides); unclaimed drafts have no owner yet, so
 // the artist is invited to claim it first.
@@ -119,9 +176,9 @@ function welcome(el, meta) {
   const st = meta.stats || {};
   el.innerHTML = html`
   <section style="text-align:center;padding:48px 0 30px" class="stack-lg">
-    <div><span class="badge grad plain">${icon('audius')} Built on Audius</span></div>
+    <div><span class="badge grad plain">${icon('audius')} Audius: one place that makes sure everyone on your song gets paid</span></div>
     <h1 style="font-size:clamp(2.4rem,1.6rem + 3.4vw,4.4rem);letter-spacing:-0.04em;max-width:900px;margin:0 auto">Your songs are already here.<br><span class="grad-text">Claim them.</span></h1>
-    <p class="muted" style="font-size:18px;max-width:640px;margin:0 auto">Every song gets a passport: who made it, who owns it, every code and registration, and a wallet that pays everyone the same day.</p>
+    <p class="muted" style="font-size:18px;max-width:640px;margin:0 auto">Find your songs, see who’s on them, and get everyone paid. Every song gets a passport with who made it, who owns it and every registration, and a wallet that splits the money the same day.</p>
     <form id="hs" style="max-width:620px;margin:6px auto 0;width:100%;position:relative">
       <input class="input" name="q" placeholder="Search your artist name, a song or an ISRC" style="padding:18px 150px 18px 22px;font-size:17px;border-radius:18px;box-shadow:var(--shadow)">
       <button class="btn btn-primary" style="position:absolute;right:8px;top:8px;bottom:8px">Find my songs</button>

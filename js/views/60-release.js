@@ -1,8 +1,9 @@
 // Releases: build a release from your passports, pass preflight, deliver to stores, watch it go live.
 // Money from a live release lands in each song's Song Wallet and is split the same day.
+import { useArtistCss } from './00-home.js';
 import { app, html, raw, api, upload, toast, modal, confirmDialog, icon, on, busy, art, date, dateTime, ago, duration, bytes, formData, artStyle } from '../app.js';
 
-app.nav({ id: 'releases', label: 'Releases', href: '/releases', icon: 'rocket', section: 'Money', order: 20, auth: true });
+app.nav({ id: 'releases', label: 'Releases', href: '/releases', icon: 'rocket', section: 'Money', order: 20, auth: true , artist: true });
 
 // ---------- styles (prefixed, injected once) ----------
 if (!document.getElementById('rl-style')) {
@@ -471,9 +472,38 @@ function actionBtn(i) {
   if (a.type === 'link') return html`<a class="btn btn-sm" href="#${a.href}">${a.label} ${icon('arrow')}</a>`;
   return '';
 }
+// The release at a glance, in six plain checks (from preflight), with Insiders first and one button.
+const READY = [
+  ['Songs', c => ['metadata', 'tracks', 'track_claimed'].includes(c)], ['Artwork', c => c === 'artwork'], ['Splits', c => c === 'splits'],
+  ['Codes', c => ['upc', 'isrc'].includes(c)], ['Stores', c => ['stores', 'territories'].includes(c)]
+];
+function readyCard(r, tracks, pf, page) {
+  const groups = READY.map(([label, f]) => {
+    const items = pf.items.filter(i => f(i.code));
+    const bad = items.filter(i => !i.ok && i.severity === 'block');
+    return { label, ok: items.length > 0 && !bad.length, sub: bad.length ? bad[0].why : label === 'Songs' ? `${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}, all claimed` : label === 'Splits' ? 'Signed by everyone' : label === 'Codes' ? 'UPC and every ISRC' : label === 'Stores' ? `${(r.stores || []).length} stores, ${(r.territories || []).includes('Worldwide') ? 'worldwide' : (r.territories || []).join(', ')}` : 'Square, store-ready', action: bad[0]?.action };
+  });
+  groups.push({ label: 'One Link page', ok: !!page, sub: page ? `${page.name}’s One Link shows it on release day` : 'Make one so listeners can find it', href: '#/onelink' });
+  const when = r.release_date ? new Date(r.release_date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  const presale = r.release_date ? new Date(new Date(r.release_date + 'T12:00:00Z').getTime() - 6 * 864e5).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+  return html`<section class="ah-card" style="margin-bottom:18px">
+    <div class="row" style="gap:14px;margin-bottom:12px">${cover(r, 'sm')}<div><h2 style="margin:0">${r.title}</h2>
+      <div class="small muted">${TYPE_LABEL[r.type]} · ${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'} · ${pf.ok ? 'Ready to go' : `${pf.blockers} to fix`}</div></div></div>
+    ${groups.map(g => html`<div class="rl-check ${g.ok ? '' : 'todo'}"><span class="ic">${icon(g.ok ? 'check' : 'dot')}</span>
+      <div class="grow"><div class="t">${g.label}</div><div class="s">${g.sub}</div></div>
+      ${!g.ok && g.action?.step ? html`<button class="btn btn-sm" data-step="${g.action.step}">${g.action.label}</button>` : !g.ok && g.href ? html`<a class="btn btn-sm" href="${g.href}">Set up</a>` : ''}</div>`)}
+    ${page ? html`<div class="rl-insiders" style="margin-top:14px">${icon('key')}<div><b>Insiders hear it first</b><span>Presale and early listen${presale ? ` from ${presale}` : ''}, for your top listeners on One Link</span></div></div>` : ''}
+    <p class="ah-quiet" style="text-align:left">Free to release. Releasing here also lowers your Wallet fee.</p>
+    <button class="ah-cta" style="width:100%;margin-top:6px" data-act="submit" ${pf.ok ? '' : 'disabled'}>${icon('rocket')} ${when ? `Release on ${when}` : 'Release'}</button>
+  </section>`;
+}
+
 async function stepReview({ r, tracks, pf, c, box, go, set, repaint }) {
-  pf = pf || await api(`/api/releases/${r.id}/preflight`);
-  box.innerHTML = html`<div class="split-main">
+  useArtistCss();
+  const [pf2, ol] = await Promise.all([pf || api(`/api/releases/${r.id}/preflight`), api('/api/onelink').catch(() => null)]);
+  pf = pf2;
+  const page = ol?.pages?.find(p => p.published) || null;
+  box.innerHTML = html`${readyCard(r, tracks, pf, page)}<div class="split-main">
     <div class="stack-lg">
       <div class="card">
         <div class="card-head"><div><h2 class="h3">Preflight</h2><div class="small muted">Everything stores and the Song Wallet need, checked before anything ships.</div></div>
@@ -496,7 +526,6 @@ async function stepReview({ r, tracks, pf, c, box, go, set, repaint }) {
           <dt>Territories</dt><dd>${(r.territories || []).includes('Worldwide') ? 'Worldwide' : (r.territories || []).join(', ')}</dd>
           <dt>Partner</dt><dd>${data_partner(c)} ${simBadge(c.partner)}</dd>
         </dl>
-        <button class="btn btn-primary btn-lg" data-act="submit" ${pf.ok ? '' : 'disabled'}>${icon('rocket')} Submit for release</button>
         <a class="btn" href="/api/releases/${r.id}/ddex.xml" download>${icon('download')} DDEX ERN 4.3 preview</a>
         ${r.status === 'draft' ? html`<button class="btn btn-ghost btn-danger btn-sm" data-act="delete">${icon('trash')} Delete draft</button>` : ''}
       </div>
