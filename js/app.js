@@ -112,32 +112,59 @@ async function route() {
   if (match.auth && !current.user) return app.go(`/signin?next=${encodeURIComponent(path)}`);
   const publicPage = !!match.public;
   const root = document.getElementById('app');
-  if (publicPage) {
-    root.innerHTML = `<main class="public"><div class="public-inner fade-in" id="view"></div></main>`;
-  } else {
+  const pub = root.querySelector(':scope > main.public');
+  // Moving between two pages of the same kind keeps the old page on screen while the new one loads off-stage, then
+  // swaps them in one view transition (a short fade out and a slide in), so nothing blanks or flashes. A slow page
+  // shows its skeleton after a moment instead. Switching between the sidebar app and a full-screen page repaints.
+  const sameKind = routeSeq > 1 && (publicPage ? !!pub : !!root.querySelector('.shell'));
+  if (publicPage && !pub) {
+    root.innerHTML = `<main class="public"><div class="public-inner" id="view"></div></main>`;
+  } else if (!publicPage) {
     if (!root.querySelector('.shell')) paintShell();
     markActive(path);
     document.querySelector('.shell')?.classList.remove('nav-open');
   }
-  // A fresh #view per navigation so delegated listeners from the previous page don't pile up. The swap runs inside a
-  // view transition where the browser has one (a short cross-fade and rise), and the skeleton is shaped like the page.
+  // A fresh #view per navigation so delegated listeners from the previous page don't pile up.
+  root.querySelectorAll('.view-stage').forEach(n => n.remove());
   const old = document.getElementById('view');
   const el = old.cloneNode(false);
-  const swap = () => { old.replaceWith(el); el.innerHTML = SKELETONS[match.skeleton] || SKELETONS.list; };
-  if (document.startViewTransition && routeSeq > 1 && !publicPage && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    await document.startViewTransition(swap).updateCallbackDone.catch(() => {});
-    if (seq !== routeSeq) return;
-  } else swap();
+  el.classList.remove('fade-in');
+  el.innerHTML = SKELETONS[match.skeleton] || SKELETONS.list;
+  const motion = !!document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let shown = false;
+  const show = async () => {
+    if (shown || seq !== routeSeq) return;
+    shown = true;
+    const put = () => {
+      el.classList.remove('view-stage');
+      el.removeAttribute('aria-hidden');
+      el.style.width = '';
+      old.isConnected ? old.replaceWith(el) : (el.isConnected || document.getElementById('view')?.replaceWith(el));
+      if (publicPage) el.closest('.public')?.classList.toggle('au-public', !!el.querySelector(':scope > .au'));
+      window.scrollTo(0, 0);
+    };
+    if (motion && sameKind) {
+      el.remove(); // off the page while the old view is captured, so no view-transition name appears twice
+      await document.startViewTransition(put).updateCallbackDone.catch(() => {});
+    } else { put(); if (!matchMedia('(prefers-reduced-motion: reduce)').matches) el.classList.add('fade-in'); }
+  };
+  if (sameKind) {
+    el.classList.add('view-stage');
+    el.setAttribute('aria-hidden', 'true');
+    el.style.width = `${old.getBoundingClientRect().width}px`;
+    old.after(el);
+    setTimeout(show, 450);
+  } else await show();
   document.title = (match.title ? match.title + ' · ' : '') + 'Audius';
-  window.scrollTo(0, 0);
   try {
     const out = await match.handler({ el, params, query, user: current.user, path, isCurrent: () => seq === routeSeq });
     if (seq !== routeSeq) return;
     if (out !== undefined && out !== null) el.innerHTML = String(out);
-    el.classList.add('fade-in');
+    await show();
   } catch (e) {
     if (seq !== routeSeq) return;
     if (e.status === 401) return app.go(`/signin?next=${encodeURIComponent(path)}`);
+    show();
     el.innerHTML = html`<div class="empty"><div class="icon">${icon('alert')}</div><h2 class="h3">${e.status === 404 ? 'Not found' : 'Something went wrong'}</h2><p>${e.message}</p></div>`.s;
     console.error(e);
   }
@@ -175,7 +202,7 @@ function paintShell() {
     <aside class="sidebar">
       <a class="brand" href="#/home"><span class="brand-mark">${icon('audius')}</span><span>Audius<small>Song Passport</small></span></a>
       <nav class="nav" aria-label="Sections">
-        ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}${s.items.every(n => n.soon) ? html` <span class="soon">Coming</span>` : ''}</div>
+        ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}${false ? html` <span class="soon">Coming</span>` : ''}</div>
           ${s.items.map(n => html`<a href="#${n.href}" data-href="${n.href}">${icon(n.icon || 'dot')}<span>${n.label}</span>${n.badge ? html`<span class="count">${n.badge()}</span>` : ''}</a>`)}`)}
       </nav>
       <div class="sidebar-foot">
@@ -235,7 +262,7 @@ addEventListener('scroll', () => document.querySelector('.topbar')?.classList.to
 // One toast at a time: a new one replaces the current one.
 let toastTimer;
 // Products that aren't launched yet (One Link, Business, listening): a quiet early-access line at the top of their screens.
-export const comingBar = what => html`<div class="soon-bar" role="note"><span class="soon">Coming</span><span>${what} is an early-access preview. Song Passport is what's live today.</span></div>`;
+export const comingBar = () => '';
 
 export function toast(msg, { error = false, ms = 2000 } = {}) {
   const box = document.getElementById('toasts');

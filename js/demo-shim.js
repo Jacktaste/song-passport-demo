@@ -45,6 +45,17 @@ const reply = e => {
 const json = (status, data) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
 const SAFE = /\/api\/(notifications\/read|listen\/plays|l\/[^/]+\/(view|event|click)|events?)$/;
 
+// Statements step month by month without end: a month the recorder never opened is a quiet one, carrying the balance of the
+// nearest recorded month.
+function quietMonth(month) {
+  const recorded = [...idx.keys()].filter(k => /^GET \/api\/wallet\/statements\/\d{4}-\d{2}\?/.test(k))
+    .map(k => JSON.parse(idx.get(k)[0].body).statement).filter(Boolean).sort((a, b) => a.period.localeCompare(b.period));
+  if (!recorded.length) return null;
+  const near = month > recorded.at(-1).period ? recorded.at(-1) : recorded[0];
+  const bal = month > near.period ? near.closing : near.opening;
+  return { ...near, period: month, opening: bal, closing: bal, lines: Object.fromEntries(Object.keys(near.lines).map(k => [k, 0])), income: [], payouts: [], reconciles: true };
+}
+
 function searchFallback(path) {
   const q = (new URLSearchParams(path.split('?')[1] || '').get('q') || '').toLowerCase();
   const all = (idx.get('GET /api/search') || []);
@@ -64,6 +75,8 @@ window.fetch = async (input, init = {}) => {
   if (method === 'GET') {
     const hit = list || (path.startsWith('/api/search') && searchFallback(path) && [searchFallback(path)]) || idx.get(`GET ${path.split('?')[0]}`);
     if (hit) return reply(pickAt(hit));
+    const month = /^\/api\/wallet\/statements\/(\d{4}-\d{2})(\?|$)/.exec(path)?.[1];
+    if (month) { const s = quietMonth(month); if (s) return json(200, { statement: s }); }
     return json(404, { error: 'This screen isn’t part of the demo yet.' });
   }
   if (list) {
@@ -110,3 +123,10 @@ bar.querySelectorAll('.db-seg button').forEach(b => b.addEventListener('click', 
 tour.addEventListener('click', e => { const a = e.target.closest('a[data-token]'); if (!a) return; e.preventDefault(); go(a.dataset.mode, a.dataset.token); });
 addEventListener('keydown', e => { if (e.key === 'Escape') closeTour(); });
 document.addEventListener('click', e => { if (!bar.contains(e.target)) closeTour(); });
+
+// The demo bar sits above the app, so full-height screens (the listening app on desktop) leave room for it.
+{
+  const bar = document.getElementById('demo-bar');
+  const fit = () => document.documentElement.style.setProperty('--demo-bar', `${bar?.offsetHeight || 0}px`);
+  if (bar) { new ResizeObserver(fit).observe(bar); fit(); }
+}

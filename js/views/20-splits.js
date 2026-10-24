@@ -728,6 +728,8 @@ app.route('/sign/:token', async ({ el, params }) => {
     const r = await busy(t, () => api.post(`/api/sign/${key}`, { action: 'sign', code, ...body() })).catch(() => null);
     if (r) await finish(r);
   });
+  // These links are buttons: stop the javascript: href from navigating (the page's security policy would block it anyway).
+  on(el, 'click', 'a[href^="javascript:"]', e => e.preventDefault());
   on(el, 'click', '[data-act=fix-name]', () => { st.showName = true; st.name = st.name || v.signature.name; paint(); el.querySelector('[data-f=name]')?.focus(); });
   on(el, 'click', '[data-act=draw]', () => { st.showDraw = true; paint(); });
   on(el, 'click', '[data-act=doc]', () => modal({ title: 'Split sheet', wide: true, body: documentView(v), actions: [{ label: 'Close' }] }));

@@ -333,7 +333,7 @@ app.route('/listen', async ({ el, user }) => {
     const lib0 = user && chip !== 'music' ? await lib() : null;
     const rc = h.receipt;
     main.innerHTML = html`
-      <div class="au-head"><div class="au-hi">${user ? html`<button class="au-me" data-me aria-label="Your account">${initials(user.name || user.email)}</button>` : ''}<h1>${user ? greeting() : 'Audius'}</h1></div><span class="au-noads">Early access · No ads</span></div>
+      <div class="au-head"><div class="au-hi">${user ? html`<button class="au-me" data-me aria-label="Your account">${initials(user.name || user.email)}</button>` : ''}<h1>${user ? greeting() : 'Audius'}</h1></div><span class="au-noads">No ads</span></div>
       <div class="au-chips">${[['music', 'Music'], ['presales', 'Presales'], ['owned', 'Owned'], ['following', 'Following']].map(([k, l]) => html`<button class="au-chip ${chip === k ? 'on' : ''}" data-chip="${k}">${l}</button>`)}</div>
       ${chip === 'music' ? html`
         ${user ? html`<div class="au-quick">

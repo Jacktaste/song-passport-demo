@@ -319,6 +319,10 @@ a.list-item:hover { background: var(--surface-2); text-decoration: none; }
 .list-item, a.card { transition: transform .15s var(--ease), background-color var(--t) var(--ease); }
 .fade-in { animation: rise .32s var(--spring) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+/* The next page renders off-stage while the current one stays put (see route() in app.js). */
+.view-stage { position: absolute !important; left: 0; top: 0; height: 100vh; overflow: hidden; visibility: hidden; pointer-events: none; contain: strict; view-transition-name: none !important; }
+.public-inner { view-transition-name: page; }
+::view-transition-group(page) { animation-duration: .3s; animation-timing-function: var(--spring); }
 @media (prefers-reduced-motion: reduce) { ::view-transition-old(page), ::view-transition-new(page) { animation: none; } }
 
 /* ---------- Skeletons shaped like the page ---------- */
