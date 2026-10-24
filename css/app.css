@@ -185,6 +185,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 .badge.money { background: var(--money-soft); color: var(--money); }
 .badge.grad { background: var(--accent-strong); color: #fff; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: var(--surface-3); font: 500 12px var(--mono); color: var(--fg-2); }
+.chip.text { font-family: var(--sans); }
 
 /* ---------- Tables ---------- */
 .table-wrap { overflow-x: auto; }
@@ -319,7 +320,7 @@ a.list-item:hover { background: var(--surface-2); text-decoration: none; }
 @keyframes vt-in { from { opacity: 0; transform: translateY(8px); } }
 .list-item[href]:active, a.card:active { transform: scale(.995); }
 .list-item, a.card { transition: transform .15s var(--ease), background-color var(--t) var(--ease); }
-.fade-in { animation: rise .32s var(--spring) both; }
+.fade-in { animation: rise .32s var(--spring) backwards; } /* backwards, not both: a leftover transform would make this wrapper the containing block for the fixed cover tint and widen the page */
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 /* The next page renders off-stage while the current one stays put (see route() in app.js). */
 .view-stage { position: absolute !important; left: 0; top: 0; height: 100vh; overflow: hidden; visibility: hidden; pointer-events: none; contain: strict; view-transition-name: none !important; }

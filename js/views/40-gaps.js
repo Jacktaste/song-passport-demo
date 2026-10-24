@@ -30,7 +30,7 @@ if (!document.getElementById('gp-style')) {
   .gp-fix .why { color: var(--fg-2); margin-top: 6px; font-size: 14px; }
   .gp-fix .how { margin-top: 8px; font-size: 13px; color: var(--muted); display: flex; gap: 6px; }
   .gp-fix .how svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--accent); }
-  .gp-amt { font: 700 15px var(--mono); color: var(--crit); white-space: nowrap; }
+  .gp-amt { font: 700 15px var(--sans); font-variant-numeric: tabular-nums; color: var(--crit); white-space: nowrap; }
   .gp-amt.soft { color: var(--muted); font-weight: 500; font-size: 13px; }
   .gp-row { display: grid; grid-template-columns: 46px minmax(0,1fr) 150px 120px; gap: 16px; align-items: center; padding: 14px 22px; border-bottom: 1px solid var(--line); color: inherit; }
   .gp-row:last-child { border-bottom: 0; }
@@ -155,7 +155,7 @@ app.route('/gaps', async ({ el }) => {
     </div>
   </div>
   ${t.sampled ? html`<div class="callout info" style="margin-bottom:18px">${icon('info')}<div>You have ${t.totalSongs.toLocaleString('en-US')} songs. This check covers the ${t.songs.toLocaleString('en-US')} most recently updated.</div></div>` : ''}
-  ${r.commonGaps.length ? html`<div class="stack-sm" style="margin-bottom:18px"><div class="eyebrow">Most common</div><div class="gp-chips">${r.commonGaps.map(c => html`<span class="chip">${CODE_LABEL[c.code] || c.code} · ${c.songs}</span>`)}</div></div>` : ''}
+  ${r.commonGaps.length ? html`<div class="stack-sm" style="margin-bottom:18px"><div class="eyebrow">Most common</div><div class="gp-chips">${r.commonGaps.map(c => html`<span class="chip text">${CODE_LABEL[c.code] || c.code} · ${c.songs}</span>`)}</div></div>` : ''}
   <div class="card">
     <div class="card-head"><h2 class="h3">Songs</h2><span class="muted small">${t.songs} checked · ${t.healthy} healthy</span></div>
     ${r.songs.map(s => html`<a class="gp-row" href="#/song/${s.songId}?tab=health">
