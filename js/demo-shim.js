@@ -56,12 +56,38 @@ function quietMonth(month) {
   return { ...near, period: month, opening: bal, closing: bal, lines: Object.fromEntries(Object.keys(near.lines).map(k => [k, 0])), income: [], payouts: [], reconciles: true };
 }
 
-function searchFallback(path) {
-  const q = (new URLSearchParams(path.split('?')[1] || '').get('q') || '').toLowerCase();
-  const all = (idx.get('GET /api/search') || []);
-  const scored = all.map(e => ({ e, rq: (new URLSearchParams(e.path.split('?')[1] || '').get('q') || '').toLowerCase() }))
-    .filter(x => x.rq && q && (x.rq.startsWith(q) || q.startsWith(x.rq)));
-  return scored[0]?.e || null;
+// Search the demo can't replay is answered from every song and artist the recording saw, so results match the
+// query, never repeat, and "Load more" stops when there is nothing more.
+let catalog = null;
+function buildCatalog() {
+  const songs = new Map(), artists = new Map();
+  const walk = o => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== 'object') return;
+    if (typeof o.id === 'string') {
+      if (o.id.startsWith('song_') && o.title && o.artist_credit && !songs.has(o.id)) songs.set(o.id, o);
+      if (o.id.startsWith('art_') && o.name && 'song_count' in o && !artists.has(o.id)) artists.set(o.id, o);
+    }
+    Object.values(o).forEach(walk);
+  };
+  for (const [k, list] of idx) if (k.startsWith('GET ')) for (const e of list) if ((e.ct || '').includes('json')) { try { walk(JSON.parse(e.body)); } catch {} }
+  return { songs: [...songs.values()], artists: [...artists.values()] };
+}
+function localSearch(path) {
+  catalog ||= buildCatalog();
+  const sp = new URLSearchParams(path.split('?')[1] || '');
+  const q = (sp.get('q') || '').trim().toLowerCase(), type = sp.get('type') || 'all';
+  const words = q.split(/\s+/).filter(Boolean);
+  const hit = (...f) => { const t = f.filter(Boolean).join(' ').toLowerCase(); return words.length && words.every(w => t.includes(w)); };
+  const songs = catalog.songs.filter(x => hit(x.title, x.version_title, x.artist_credit, x.release_title, x.isrc));
+  const artists = catalog.artists.filter(x => hit(x.name, x.disambiguation));
+  const from = Number(/^o:(\d+)$/.exec(sp.get('cursor') || '')?.[1] || 0);
+  const page = (list, n) => ({ items: list.slice(from, from + n), next: from + n < list.length ? `o:${from + n}` : null });
+  const out = { q: sp.get('q') || '', type, artists: [], songs: [], next: null, code: null, approximate: false, ms: 1 };
+  if (type === 'artists') { const p = page(artists, 24); out.artists = p.items; out.next = p.next; }
+  else if (type === 'songs') { const p = page(songs, 20); out.songs = p.items; out.next = p.next; }
+  else { out.artists = from ? [] : artists.slice(0, 8); const p = page(songs, 20); out.songs = p.items; out.next = p.next; }
+  return out;
 }
 
 window.fetch = async (input, init = {}) => {
@@ -73,7 +99,8 @@ window.fetch = async (input, init = {}) => {
   const path = url.pathname.slice(at) + url.search;
   const list = idx.get(`${method} ${path}`);
   if (method === 'GET') {
-    const hit = list || (path.startsWith('/api/search') && searchFallback(path) && [searchFallback(path)]) || idx.get(`GET ${path.split('?')[0]}`);
+    if (!list && url.pathname.endsWith('/api/search')) return json(200, localSearch(path));
+    const hit = list || idx.get(`GET ${path.split('?')[0]}`);
     if (hit) return reply(pickAt(hit));
     const month = /^\/api\/wallet\/statements\/(\d{4}-\d{2})(\?|$)/.exec(path)?.[1];
     if (month) { const s = quietMonth(month); if (s) return json(200, { statement: s }); }

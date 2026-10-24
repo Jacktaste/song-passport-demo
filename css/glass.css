@@ -186,3 +186,6 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   :root { --surface: var(--glass-strong); --glass: var(--glass-strong); --glass-side: var(--glass-strong); }
   .au, .au-dock { --card: #1A1A21; }
 }
+
+/* The clickable demo's banner (scripts/demo-page.html). */
+#demo-bar { background: var(--glass-strong); -webkit-backdrop-filter: saturate(1.8) blur(30px); backdrop-filter: saturate(1.8) blur(30px); border-bottom-color: var(--line); }
