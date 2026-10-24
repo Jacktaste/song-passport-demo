@@ -360,7 +360,7 @@ async function workspace(el, song, user, reloadSong) {
       <div class="card-head"><div><h2 class="h3">Version history</h2><div class="small muted">Every save is a snapshot. Restoring adds a new version, so history is never rewritten.</div></div></div>
       ${rows.length ? html`<div class="card-body" style="padding:8px 8px 8px 6px"><div class="ws-graph">
         <svg class="ws-lines" width="${gutter}" height="${rows.length * ROW}" viewBox="0 0 ${gutter} ${rows.length * ROW}">${raw(svg)}</svg>
-        ${rows.map(r => r.type === 'commit' ? html`<div class="ws-row ${r.c.id === data.head?.id ? 'head' : ''}" data-act="ws-commit" data-id="${r.c.id}" style="padding-left:${gutter}px">
+        ${rows.map(r => r.type === 'commit' ? html`<div class="ws-row ${r.c.id === data.head?.id ? 'head' : ''}" data-act="ws-commit" data-id="${r.c.id}" role="button" tabindex="0" aria-label="Version ${r.c.seq}: ${r.c.message}" style="padding-left:${gutter}px">
             <span class="ws-v">v${r.c.seq}</span>
             <div class="grow"><div class="ws-msg">${r.c.message}</div>
               <div class="ws-meta">${r.c.author_label} · ${ago(r.c.created_at)} · <span class="mono">${r.c.short}</span>${r.c.kind === 'restore' ? ' · restore' : ''}</div></div>

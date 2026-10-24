@@ -207,7 +207,7 @@ function hero(el) {
   const st = app.meta?.stats || {};
   el.innerHTML = html`<div class="dc-scope">
   <div class="card hero dc-hero">
-    <div class="eyebrow" style="color:rgba(255,255,255,.75);position:relative;z-index:1">Find your songs</div>
+    <div class="eyebrow" style="color:rgba(255,255,255,.92);position:relative;z-index:1">Find your songs</div>
     <h1 style="margin-top:10px">Your songs are already here. Claim them.</h1>
     <p class="lede">We built a draft passport for every song we could find. Search your artist name, a song title or an ISRC, then prove it's you in a couple of minutes.</p>
     <form class="dc-search" id="hs" autocomplete="off">${icon('search')}
@@ -447,7 +447,7 @@ app.route('/claim/:kind/:id', async ({ el, params, query, user }) => {
           <div class="ic">${icon('receipt')}</div>
           <div class="stack-sm"><div class="row wrap"><h2 class="h3">Upload a distributor statement</h2><span class="badge ok plain">Instant</span></div>
             <p class="muted small">Export a royalty or sales report (CSV or TSV) from DistroKid, TuneCore, CD Baby, Amuse, UnitedMasters or any distributor. When enough ISRCs and titles match ${crew ? `songs ${label} is credited on` : isArtist ? `${label}'s songs` : 'this song'}, you're approved automatically.</p>
-            <label class="dropzone" id="dz" style="padding:20px"><input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden id="file">
+            <label class="dropzone" id="dz" style="padding:20px"><input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" class="sr-only" id="file">
               ${icon('upload')}<div style="margin-top:6px"><b>Drop your statement here</b> or click to choose</div><div class="tiny">We only read ISRCs, titles and artist names. The file is kept privately as evidence.</div></label></div>
         </div>
         <div class="dc-method">

@@ -130,6 +130,7 @@ async function route() {
     if (!root.querySelector('.shell')) paintShell();
     markActive(path);
     document.querySelector('.shell')?.classList.remove('nav-open');
+    document.querySelector('[data-act=menu]')?.setAttribute('aria-expanded', 'false');
   }
   // A fresh #view per navigation so delegated listeners from the previous page don't pile up.
   root.querySelectorAll('.view-stage').forEach(n => n.remove());
@@ -171,6 +172,12 @@ async function route() {
     if (seq !== routeSeq) return;
     if (out !== undefined && out !== null) el.innerHTML = String(out);
     await show();
+    // After a tap in the menu or tab bar, the page's title takes focus so a screen reader starts reading the new page.
+    const from = document.activeElement;
+    if (sameKind && !inPlace && (from === document.body || from?.closest('.nav, .tabbar, .au-tabs, .au-lib'))) {
+      const h = el.querySelector('h1') || el.querySelector('h2');
+      if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+    }
   } catch (e) {
     if (seq !== routeSeq) return;
     if (e.status === 401) return app.go(`/signin?next=${encodeURIComponent(path)}`);
@@ -209,7 +216,8 @@ function paintShell() {
   }
   root.innerHTML = html`
   <div class="shell">
-    <aside class="sidebar">
+    <a class="skip-link" href="#view" data-act="skip">Skip to content</a>
+    <aside class="sidebar" id="sidebar">
       <a class="brand" href="#/home"><span class="brand-mark">${icon('audius')}</span><span>Audius<small>Song Passport</small></span></a>
       <nav class="nav" aria-label="Sections">
         ${sections.map(s => html`<div class="nav-section eyebrow">${s.name}${false ? html` <span class="soon">Coming</span>` : ''}</div>
@@ -225,7 +233,7 @@ function paintShell() {
     </aside>
     <div class="main">
       <header class="topbar">
-        <button class="btn btn-ghost btn-icon menu-btn" data-act="menu" aria-label="Menu">${icon('menu')}</button>
+        <button class="btn btn-ghost btn-icon menu-btn" data-act="menu" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">${icon('menu')}</button>
         <form class="search" data-act="search"><input name="q" placeholder="Search" autocomplete="off" aria-label="Search">${icon('search')}</form>
         <div class="spacer"></div>
         <button class="btn btn-ghost btn-icon" data-act="theme" title="Light or dark" aria-label="Switch light or dark appearance">${icon('moon')}</button>
@@ -243,7 +251,9 @@ function paintShell() {
 function markActive(path) {
   document.querySelectorAll('.nav a, .tabbar a').forEach(a => {
     const h = a.dataset.href;
-    a.classList.toggle('active', path === h || (h !== '/home' && path.startsWith(h + '/')));
+    const on = path === h || (h !== '/home' && path.startsWith(h + '/'));
+    a.classList.toggle('active', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
 }
 
@@ -251,7 +261,12 @@ document.addEventListener('click', async e => {
   const t = e.target.closest('[data-act]');
   if (!t) return;
   const act = t.dataset.act;
-  if (act === 'menu') document.querySelector('.shell').classList.toggle('nav-open');
+  if (act === 'menu') {
+    const open = document.querySelector('.shell').classList.toggle('nav-open');
+    t.setAttribute('aria-expanded', String(open));
+    if (open) document.querySelector('.nav a')?.focus({ preventScroll: true });
+  }
+  if (act === 'skip') { e.preventDefault(); const v = document.getElementById('view'); v.setAttribute('tabindex', '-1'); v.focus(); }
   if (act === 'theme') {
     const dark = getComputedStyle(document.documentElement).colorScheme === 'dark';
     document.documentElement.dataset.theme = dark ? 'light' : 'dark';
@@ -299,13 +314,24 @@ export function modal({ title, body = '', wide = false, actions = [{ label: 'Clo
   return new Promise(resolve => {
     const back = document.createElement('div');
     back.className = 'modal-back';
-    back.innerHTML = html`<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">
-      <div class="modal-head"><h2>${title}</h2><button class="btn btn-ghost btn-icon btn-sm" data-x aria-label="Close">${icon('x')}</button></div>
+    const opener = document.activeElement;
+    const hid = 'mh' + Math.random().toString(36).slice(2, 8);
+    back.innerHTML = html`<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="${hid}" tabindex="-1">
+      <div class="modal-head"><h2 id="${hid}">${title}</h2><button class="btn btn-ghost btn-icon btn-sm" data-x aria-label="Close">${icon('x')}</button></div>
       <div class="modal-body">${raw(String(body))}</div>
       <div class="modal-foot">${actions.map((a, i) => html`<button class="btn ${a.primary ? 'btn-primary' : ''} ${a.danger ? 'btn-danger' : ''}" data-i="${i}">${a.label}</button>`)}</div>
     </div>`.s;
     const m = back.querySelector('.modal');
-    const close = v => { back.remove(); resolve(v); };
+    const close = v => { removeEventListener('keydown', k); back.remove(); if (opener?.isConnected) opener.focus({ preventScroll: true }); resolve(v); };
+    // Escape closes; Tab stays inside the dialog.
+    function k(e) {
+      if (e.key === 'Escape') return close(null);
+      if (e.key !== 'Tab') return;
+      const f = [...m.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])')].filter(x => x.offsetParent);
+      if (!f.length) return;
+      if (e.shiftKey && (document.activeElement === f[0] || document.activeElement === m)) { e.preventDefault(); f.at(-1).focus(); }
+      else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+    }
     back.addEventListener('click', async e => {
       if (e.target === back || e.target.closest('[data-x]')) return close(null);
       const b = e.target.closest('[data-i]');
@@ -318,9 +344,9 @@ export function modal({ title, body = '', wide = false, actions = [{ label: 'Clo
       finally { b.classList.remove('loading'); }
     });
     document.body.appendChild(back);
-    addEventListener('keydown', function k(e) { if (e.key === 'Escape') { removeEventListener('keydown', k); close(null); } });
+    addEventListener('keydown', k);
     onOpen?.(m);
-    m.querySelector('input, select, textarea')?.focus();
+    (m.querySelector('input, select, textarea') || m).focus({ preventScroll: true });
   });
 }
 
@@ -524,7 +550,26 @@ document.addEventListener('click', e => {
   for (const m of document.querySelectorAll('.menu:not([hidden])')) if (!b || m !== b.nextElementSibling) { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); }
   if (b) { const m = b.nextElementSibling; m.hidden = !m.hidden; b.setAttribute('aria-expanded', String(!m.hidden)); if (!m.hidden) m.querySelector('button')?.focus(); }
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') for (const m of document.querySelectorAll('.menu:not([hidden])')) { m.hidden = true; m.previousElementSibling?.focus(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.querySelector('.shell.nav-open')) { document.querySelector('.shell').classList.remove('nav-open'); const b = document.querySelector('[data-act=menu]'); b?.setAttribute('aria-expanded', 'false'); b?.focus(); }
+  if (e.key === 'Escape') for (const m of document.querySelectorAll('.menu:not([hidden])')) { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); m.previousElementSibling?.focus(); }
+  // Arrow keys move through an open menu, like a native one.
+  const m = e.target.closest?.('.menu');
+  if (m && /^(ArrowDown|ArrowUp|Home|End)$/.test(e.key)) {
+    e.preventDefault();
+    const items = [...m.querySelectorAll('[role=menuitem]')], i = items.indexOf(document.activeElement);
+    const n = e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : (i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items[n]?.focus();
+  }
+});
+// Anything drawn as a button but not a <button> (role="button") works with Enter and Space too.
+document.addEventListener('keydown', e => {
+  if (e.defaultPrevented || (e.key !== 'Enter' && e.key !== ' ')) return;
+  const t = e.target;
+  if (t.getAttribute?.('role') !== 'button' || /^(BUTTON|A|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(t.tagName)) return;
+  e.preventDefault();
+  t.click();
+});
 
 // A progress ring: done of total, drawn in the accent color. Label sits under the number for screen readers too.
 export function ring(done, total, { size = 88, label = 'in place' } = {}) {

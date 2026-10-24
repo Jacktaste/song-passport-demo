@@ -35,13 +35,13 @@ if (!document.getElementById('wl-style')) {
   .wl-hero .eyebrow { color: rgba(255,255,255,.75); }
   .wl-hero-row { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 18px; position: relative; z-index: 1; }
   .wl-hero-row div b { display: block; font: 650 18px var(--display); font-variant-numeric: tabular-nums; }
-  .wl-hero-row div span { font-size: 12.5px; color: rgba(255,255,255,.72); }
+  .wl-hero-row div span { font-size: 12.5px; color: rgba(255,255,255,.9); }
   .wl-hero .btn { position: relative; z-index: 1; }
   .wl-hero .btn-white { background: #fff; color: #1a1340; border-color: #fff; }
   .wl-hero .btn-white:hover { background: #f1efff; }
   .wl-hero .btn-glass { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.22); }
   .wl-hero .btn-glass:hover { background: rgba(255,255,255,.2); }
-  .wl-hero .wl-badge { background: rgba(255,255,255,.14); color: #fff; }
+  .wl-hero .wl-badge { background: rgba(20,8,40,.32); color: #fff; }
   .wl-held { display: flex; gap: 16px; align-items: center; padding: 16px 20px; border-radius: var(--r-lg); background: var(--warn-soft); color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); }
   .wl-held .wl-held-amt { font: 700 24px/1.15 var(--display); color: var(--warn); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
   .wl-held .wl-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); flex: none; }
@@ -477,7 +477,7 @@ app.route('/wallet/receipt/:id', async ({ el, params }) => {
     <div class="card">
       <div class="wl-r-top">
         <span class="eyebrow">Receipt · ${date(inc.created_at)}</span>
-        <div class="wl-r-amt">${fmt(inc.amount, inc.currency)}</div>
+        <h1 class="wl-r-amt">${fmt(inc.amount, inc.currency)}</h1>
         <div style="font-weight:600;font-size:16px">${inc.source} ${TYPES[inc.type] ? '· ' + TYPES[inc.type] : ''}</div>
         <div class="muted">for <a href="#/song/${inc.song_id}?tab=wallet">${inc.title}</a> by ${inc.artist_credit}</div>
         <div class="row wrap" style="justify-content:center;margin-top:12px">
@@ -563,7 +563,7 @@ app.route('/wallet/import', async ({ el }) => {
     <p class="lede">Drop a CSV or TSV from your distributor, a DSP or a PRO. We read the columns, match each line to your songs by ISRC, then ISWC, then title and artist, and you check it before anything is posted.</p></div></div>
   <div class="split-main">
     <div class="card card-pad stack">
-      <div class="wl-drop" id="drop">${icon('upload')}<div style="margin-top:8px;font-weight:600;color:var(--fg)">Drop a statement file here</div><div class="small">or click to choose · CSV, TSV, semicolon CSV · up to 20 MB</div>
+      <div class="wl-drop" id="drop" role="button" tabindex="0" aria-label="Choose a statement file">${icon('upload')}<div style="margin-top:8px;font-weight:600;color:var(--fg)">Drop a statement file here</div><div class="small">or click to choose · CSV, TSV, semicolon CSV · up to 20 MB</div>
         <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden></div>
       <details><summary class="small" style="cursor:pointer;color:var(--accent)">Or paste the contents</summary>
         <textarea class="input mono" id="paste" rows="7" style="margin-top:10px" placeholder="Sale Month,Store,Artist,Title,ISRC,Quantity,Earnings (USD)"></textarea></details>

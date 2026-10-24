@@ -1,0 +1,116 @@
+/* Accessibility: the last sheet on the page (after glass.css), so readable text, visible focus and comfortable tap targets
+   win over any look. Targets WCAG 2.2 AA: 4.5:1 for text (3:1 for large text and icons), a visible focus ring on every control,
+   44pt tap targets on touch screens, and calmer, solid surfaces for people who ask for less motion or transparency. */
+
+/* ---------- Keyboard ---------- */
+.skip-link { position: fixed; z-index: 200; left: 12px; top: 12px; padding: 10px 16px; border-radius: 999px; background: var(--accent-strong); color: #fff;
+  font-weight: 650; box-shadow: var(--shadow-lg); transform: translateY(-200%); transition: transform .15s var(--ease); }
+.skip-link:focus { transform: none; text-decoration: none; }
+/* Headings that take focus after a page change are a reading position, not a control. */
+h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, #view[tabindex="-1"]:focus, .modal[tabindex="-1"]:focus { outline: none; }
+/* One focus ring everywhere, drawn outside so glass, pills and art never hide it. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:focus-visible, .nav a:focus-visible, .tabbar a:focus-visible, .chip:focus-visible, .seg button:focus-visible, .au-pill:focus-visible,
+.au-tabs a:focus-visible, .au-lib nav a:focus-visible, [role=button]:focus-visible, .list-item:focus-visible, .card a:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; }
+.au :focus-visible, .au-dock :focus-visible, .ol-public :focus-visible { outline-color: #D9B3FF; }
+/* Inputs that drew no ring of their own. */
+.input:focus-visible, .topbar .search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.au-search:focus-within, .dc-search:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 99px; }
+.au-search:focus-within { border-radius: 12px; }
+.sp-edit:focus-visible, .qs-title:focus-visible, .qs-row input:focus-visible, .ws-notes input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* File pickers: the real input stays focusable (visually hidden), and its drop area shows the ring. */
+.dropzone:focus-within, .wl-drop:focus-visible, .btn:has(> input.sr-only:focus-visible), .au-file:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Phone menu: closed means out of the tab order as well as off screen. */
+@media (max-width: 900px) {
+  .shell:not(.nav-open) .sidebar { visibility: hidden; transition: transform .25s var(--ease), visibility 0s .25s; }
+  .shell.nav-open .sidebar { visibility: visible; transition: transform .25s var(--ease); }
+}
+
+/* ---------- Text over cover art and colour ---------- */
+/* Status pills that sit on a cover (Draft, Live, …) use a dark frosted chip with white text, so they read on any artwork. */
+.rl-cover .rl-cover-badge .badge { background: rgba(12,8,20,.62); color: #fff; -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.rl-cover .rl-cover-badge .badge::before { background: #fff; opacity: .9; }
+.rl-cover .rl-cover-badge .badge.ok::before { background: #4ADE80; opacity: 1; }
+.rl-cover .rl-cover-badge .badge.warn::before { background: #FBBF24; opacity: 1; }
+.rl-cover .rl-cover-badge .badge.crit::before { background: #F87171; opacity: 1; }
+.rl-cover .rl-cover-badge .badge.info::before { background: #C9A6FF; opacity: 1; }
+/* Initials on generated art keep a soft shadow, so they read on the light end of every gradient. */
+.art, .rl-cover { text-shadow: 0 1px 2px rgba(0,0,0,.28); }
+
+/* White text on the purple heroes: the glass makes the gradient lighter, so secondary text goes brighter. */
+.card.hero .muted, .card.hero .eyebrow, .dc-hero p.lede, .dc-stats span, .pl-hero p { color: rgba(255,255,255,.94) !important; }
+/* Listening artist header: a soft shade at the bottom so the name and listener count read on any artist colour or photo. */
+.au-artist-top::after { content: ""; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgba(0,0,0,.5)); pointer-events: none; }
+.au-artist-top .nm { z-index: 1; }
+.au-artist-top .nm small { color: #fff; }
+/* Listening app secondary text and unselected choices, a step brighter on glass. */
+.au, .au-dock { --mut: #B9B9C3; }
+.au-srcs button { color: #D4D4DC; }
+.au-noads { color: #D9B3FF; }
+
+/* Filled purple buttons and dots keep white text readable in dark mode too (the dark accent is a light lavender). */
+.ah-cta, .soon-bar .soon, .photo-add, .dc-stepper .done .dot { background: #7E1BCC; color: #fff; }
+.ah-cta:hover { background: #5B23E1; color: #fff; }
+
+/* Status text on glass: the light theme's green, amber and red go a shade deeper so 12px pills pass 4.5:1 on tinted glass. */
+:root:not([data-theme="dark"]) { --ok: #0F6B33; --money: #0F6B33; --warn: #8F4206; --crit: #A11A1A; --muted: #56565F; --faint: #5E5E68; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ok: #4ADE80; --money: #4ADE80; --warn: #FBBF24; --crit: #F87171; --muted: #A9A9B3; --faint: #9A9AA5; } }
+/* White initials on bright avatar colours (cyan, orange, sky): a light shade underneath keeps them readable. */
+.avatar:not([style*="url("]), .wl-srcdot { background-image: linear-gradient(rgba(0,0,0,.22), rgba(0,0,0,.22)) !important; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
+
+/* ---------- Phone tab bar ---------- */
+@media (max-width: 760px) {
+  /* Frosted enough that the page underneath never shows through the labels. */
+  .tabbar { background: color-mix(in srgb, var(--glass-strong) 70%, var(--ground, var(--bg))); }
+  .tabbar a { color: var(--fg-2); }
+  .tabbar a.active { color: var(--accent); }
+}
+
+/* ---------- Touch: 44pt targets ---------- */
+@media (pointer: coarse) {
+  .btn-icon, .btn-sm.btn-icon { min-width: 44px; min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+  .seg button, .chip, .au-chip { min-height: 40px; }
+  .menu button { min-height: 44px; }
+  .qs-row input { min-height: 40px; }
+  /* Small icons and text buttons get a bigger invisible hit area without moving anything. */
+  .info-tip, .ol-row .grip, .qs-x, .link-btn { padding: 12px; margin: -12px; }
+  .sw { width: 36px; height: 36px; }
+  .au-search input { align-self: stretch; }
+  /* iPhone zooms the whole page into any box with text under 16px; 16px keeps the page still while typing. */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: max(16px, 1em); }
+}
+
+/* ---------- Less motion, less transparency, more contrast ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+  .shell:not(.nav-open) .sidebar, .shell.nav-open .sidebar { transition: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .card, .song-hero, .ah-card, .ah-tile, .ol-row, .ol-linkbar, .a2hs, .topbar, .sidebar, .tabbar, .modal, .menu, #demo-bar,
+  .au-card, .au-presale, .au-q, .au-plan, .au-mini, .au-tabs, .au-bar, .au-lib, .au-np, .au-main {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .card, .song-hero, .ah-card, .ah-tile, .topbar, .sidebar, .tabbar, .modal, .menu { background: var(--surface); }
+  .au-tabs, .au-mini, .au-bar { background: #1A1A21; }
+  body::before, .au::before { opacity: .35; }
+}
+@media (prefers-contrast: more) {
+  :root { --muted: var(--fg-2); --faint: var(--fg-2); --line: var(--line-strong); }
+  .card, .au-card { border-color: currentColor; }
+}
+@media (forced-colors: active) {
+  .badge, .btn, .chip, .tabbar a.active, .nav a.active { border: 1px solid CanvasText; }
+  :focus-visible { outline: 2px solid Highlight; }
+}
+.au-search input:focus-visible, .dc-search input:focus-visible { outline: none; }
+/* Service letters on One Link (S for Spotify…) sit on brand colours: a shade keeps the letter readable. */
+.ol-services i { background-image: linear-gradient(rgba(0,0,0,.2), rgba(0,0,0,.2)); text-shadow: 0 1px 1px rgba(0,0,0,.3); }
+.gp-score { background: var(--glass-strong, var(--surface)); }
+/* Pills on the song hero sit over a blurred copy of the cover: give them a solid base. */
+.song-hero .badge { background-color: var(--glass-strong, var(--surface)); }
+.song-hero .badge.ok { background-image: linear-gradient(var(--ok-soft), var(--ok-soft)); }
+.song-hero .badge.warn { background-image: linear-gradient(var(--warn-soft), var(--warn-soft)); }
+.song-hero .badge.crit { background-image: linear-gradient(var(--crit-soft), var(--crit-soft)); }
+.song-hero .badge.info { background-image: linear-gradient(var(--info-soft), var(--info-soft)); }

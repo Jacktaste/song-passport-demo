@@ -36,7 +36,7 @@ function block(b, preview) {
       return html`<div class="ol-hero"><div class="cover" style="${cover(b.title, b.song?.artwork_url)}"><div><div class="t">${b.title}</div><div class="s">${b.subtitle || 'Listen anywhere'}</div></div></div>
         <div class="ol-services">${SERVICES.map(([key, label, color, letter]) => {
           const href = key === 'audius' && b.song ? `#/listen/song/${b.song.id}` : links[key];
-          const inner = html`<i style="background:${color}">${key === 'apple' ? raw('&#63743;') : letter}</i>${label}`;
+          const inner = html`<i aria-hidden="true" style="background:${color}">${key === 'apple' ? raw('&#63743;') : letter}</i>${label}`;
           return href && !preview ? html`<a href="${href}" ${key === 'audius' ? '' : raw('target="_blank" rel="noopener"')} data-svc="${b.id}">${inner}</a>` : html`<span>${inner}</span>`;
         })}</div></div>`;
     }
@@ -209,7 +209,7 @@ app.route('/key', async ({ el }) => {
     ${keys.length ? html`<div class="lk-stack">${keys.map(k => html`<a class="lk-pass" style="--acc:${k.page.accent};text-decoration:none" href="#/l/${k.page.handle}">
         <div class="top"><div><div class="lbl">Listener Key</div><div class="nm">${k.page.name}</div><div class="small" style="opacity:.75;margin-top:2px">Since ${date(k.since)}</div></div><div class="lvl">${k.name}</div></div>
         <div class="stats"><div><b>${money(k.spent)}</b><small>supported</small></div><div><b>${k.minutes}</b><small>minutes</small></div><div><b>${k.unlocked}</b><small>unlocked</small></div></div></a>`)}</div>`
-      : html`<div class="card"><div class="empty"><div class="icon">${ico('key')}</div><h3>No Listener Keys yet</h3><p>Buy something from an artist's One Link, or tap "Get your Listener Key" on their page.</p></div></div>`}`.s;
+      : html`<div class="card"><div class="empty"><div class="icon">${ico('key')}</div><h2 class="h3">No Listener Keys yet</h2><p>Buy something from an artist's One Link, or tap "Get your Listener Key" on their page.</p></div></div>`}`.s;
 }, { auth: true, title: 'Listener Key' });
 
 // ---------- the artist's editor ----------
@@ -317,7 +317,7 @@ function pageTab(d) {
       ${[['Views', s.views], ['Clicks', s.clicks], ['Sales', money(s.gross)], ['Listener Keys', s.listeners]].map(([l, v]) => html`<div class="card pl-stat"><div class="v">${v}</div><div class="l">${l} · 30 days</div></div>`)}
     </div>
     <div class="card" style="overflow:hidden">
-      <div class="card-head"><h3>Your page</h3><button class="btn btn-primary btn-sm" data-add>${ico('plus')} Add</button></div>
+      <div class="card-head"><h2 class="h3">Your page</h2><button class="btn btn-primary btn-sm" data-add>${ico('plus')} Add</button></div>
       ${d.blocks.length ? d.blocks.map(b => {
         const k = KIND[b.kind];
         return html`<div class="ol-row ${b.visible ? '' : 'off'}" draggable="true" data-id="${b.id}">

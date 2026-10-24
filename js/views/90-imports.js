@@ -179,7 +179,7 @@ app.route('/admin/imports', async ({ el, user, isCurrent }) => {
       <div class="card">
         <div class="card-head"><h2 class="h3">Upload a catalog</h2><span class="badge plain">CSV or TSV</span></div>
         <div class="card-pad stack">
-          <div class="dropzone" data-act="pick" id="im-drop">${icon('upload')}<div style="margin-top:8px"><b>Drop a file</b> or click to choose</div><div class="small">Up to 512 MB. Re-uploading the same file never creates duplicates.</div></div>
+          <div class="dropzone" data-act="pick" id="im-drop" role="button" tabindex="0" aria-label="Choose a catalogue file">${icon('upload')}<div style="margin-top:8px"><b>Drop a file</b> or click to choose</div><div class="small">Up to 512 MB. Re-uploading the same file never creates duplicates.</div></div>
           <input type="file" id="im-file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden>
           <div id="im-up"></div>
           <div class="small muted">Recognised columns (any of these names):</div>

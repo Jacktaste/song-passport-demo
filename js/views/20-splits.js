@@ -1044,7 +1044,7 @@ app.route('/verify', async ({ el, query }) => {
         <p class="muted" style="font-size:15.5px;max-width:620px">Paste a certificate's JSON, or drop the file. We re-hash the document and check every Ed25519 signature against the platform public key, on our server and separately in your browser.</p></div>
       <div class="card card-pad stack">
         <textarea class="input mono" id="vj" style="min-height:220px;font-size:12px" placeholder='{"certificate":"song-passport/split-certificate@1", ...}'>${prefill}</textarea>
-        <div class="row wrap between"><label class="btn btn-sm">${icon('upload')} Open file<input type="file" accept="application/json,.json" id="vf" hidden></label>
+        <div class="row wrap between"><label class="btn btn-sm">${icon('upload')} Open file<input type="file" accept="application/json,.json" id="vf" class="sr-only"></label>
           <button class="btn btn-primary" data-act="verify">${icon('shield')} Verify</button></div>
       </div>
       <div id="vr"></div>

@@ -189,3 +189,103 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 
 /* The clickable demo's banner (scripts/demo-page.html). */
 #demo-bar { background: var(--glass-strong); -webkit-backdrop-filter: saturate(1.8) blur(30px); backdrop-filter: saturate(1.8) blur(30px); border-bottom-color: var(--line); }
+
+/* ---------- Premium pass: real covers, depth, quiet links ---------- */
+/* App links never underline on hover; links inside sentences still do. */
+a:hover { text-decoration: none; }
+p a:hover, .callout a:hover, .prose a:hover, .lede a:hover { text-decoration: underline; }
+.au-sheet a, .au-sheet a:hover { color: inherit; text-decoration: none; }
+
+/* Behind a sheet or modal the page dims and softens a little, it doesn't turn to mud. */
+.modal-back, .pl-back { background: rgba(6,5,12,.46); -webkit-backdrop-filter: blur(6px) saturate(1.1); backdrop-filter: blur(6px) saturate(1.1); }
+
+/* The listening room takes its colour from the featured cover. */
+.au::after { content: ""; position: fixed; inset: -10%; z-index: -1; pointer-events: none; background: var(--au-backdrop, none) center / cover no-repeat;
+  filter: blur(100px) saturate(1.4) brightness(.8); opacity: .34; transform: translateZ(0); }
+.au { --t-ease: cubic-bezier(.2,.8,.2,1); }
+
+/* Type: tighter, bolder, calmer greys. */
+.au-hi h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.035em; }
+@media (max-width: 480px) { .au-hi h1 { font-size: 22px; } .au-noads { font-size: 11px; padding: 5px 9px; } }
+.au-main > * { flex-shrink: 0; }
+.au-h2 h2 { font-size: 22px; font-weight: 750; letter-spacing: -0.03em; }
+.au-h2 small { color: rgba(255,255,255,.62); }
+.au-me { background: linear-gradient(140deg, #A24DF0, #5B23E1); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 14px rgba(126,27,204,.45); border: 0; }
+
+/* Featured hero */
+.au-hero { position: relative; display: flex; align-items: flex-end; gap: 22px; padding: 18px; border-radius: 28px; overflow: hidden; isolation: isolate;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 30px 60px rgba(0,0,0,.35);
+  -webkit-backdrop-filter: saturate(1.6) blur(30px); backdrop-filter: saturate(1.6) blur(30px); }
+.au-hero .au-art.big { width: 200px; height: 200px; border-radius: 18px; box-shadow: 0 24px 50px rgba(0,0,0,.5); }
+.au-hero .t { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-bottom: 6px; }
+.au-hero small { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #E2C2FF; }
+.au-hero h2 { font-size: clamp(28px, 3.4vw, 48px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; overflow-wrap: anywhere; }
+.au-hero p { font-size: 17px; color: rgba(255,255,255,.8); margin-bottom: 12px; }
+.au-heroplay { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 22px 0 18px; border-radius: 24px; border: 0; cursor: pointer;
+  background: #fff; color: #0A0710 !important; font-weight: 700; font-size: 16px; box-shadow: 0 10px 24px rgba(0,0,0,.35); transition: transform .2s var(--t-ease); }
+.au-heroplay svg { fill: currentColor; }
+.au-heroplay:hover { transform: scale(1.04); }
+.au-heroplay:active { transform: scale(.97); }
+.au-herosoon { align-self: flex-start; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.88); padding: 8px 14px; border-radius: 18px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.14); }
+@media (max-width: 640px) {
+  .au-hero { flex-direction: column; align-items: stretch; padding: 14px; gap: 14px; }
+  .au-hero .au-art.big { width: 100%; height: auto; aspect-ratio: 1; }
+}
+
+/* Mixes: four covers, name on a dark scrim (passes 4.5:1 over any art). */
+.au-tile.mix { position: relative; width: auto; }
+.au-mix { position: relative; width: 140px; aspect-ratio: 1; border-radius: 16px; overflow: hidden; display: grid; background: #1A1622;
+  box-shadow: 0 14px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.08); }
+.au-mix.four { grid-template-columns: 1fr 1fr; }
+.au-mix i { background-size: cover; background-position: center; }
+.au-mix.none { background: radial-gradient(120% 90% at 20% 10%, color-mix(in srgb, var(--c) 90%, #fff 10%), transparent 60%), radial-gradient(90% 90% at 90% 100%, #2B6BFF, transparent 60%), var(--c); }
+.au-mixname { position: absolute; left: 0; top: 0; width: 140px; aspect-ratio: 1; border-radius: 16px; display: flex; align-items: flex-end; padding: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.78) 100%); pointer-events: none; }
+.au-mixname b { font-size: 15px !important; font-weight: 800 !important; letter-spacing: -0.02em; line-height: 1.15; white-space: normal !important; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+@media (min-width: 900px) { .au-mix, .au-mixname { width: 180px; } }
+
+/* Covers everywhere: soft depth, gentle lift on hover. Generated art is a colour field, not an empty ring. */
+.au-art { border-radius: 12px; }
+.au-art.gen::after { width: 120%; height: 120%; left: -40%; top: -50%; border: 0; background: radial-gradient(closest-side, rgba(255,255,255,.35), transparent); }
+.au-art.gen::before { content: ''; position: absolute; width: 90%; height: 90%; right: -35%; bottom: -35%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.35), transparent); }
+.au-tile .au-art { box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06); transition: transform .25s var(--t-ease), box-shadow .25s var(--t-ease); }
+.au-tile b { font-size: 14px; letter-spacing: -0.01em; }
+.au-tile:hover .au-art, .au-tile:hover .au-mix, .au-tile:focus-visible .au-art { transform: translateY(-3px); box-shadow: 0 20px 36px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.1); }
+.au-mix { transition: transform .25s var(--t-ease), box-shadow .25s var(--t-ease); }
+.au-tile.upcoming { cursor: default; }
+.au-tile.upcoming:hover .au-art { transform: none; }
+
+/* Rows and quick tiles: a soft glass highlight on hover, never an underline. */
+.au-row { border-radius: 14px; transition: background-color .2s ease; }
+.au-row:hover, .au-row:focus-visible { background: rgba(255,255,255,.07); text-decoration: none; }
+.au-row .ico { border-radius: 12px; }
+.au-q { transition: background-color .2s ease, transform .2s var(--t-ease); }
+.au-q:hover { background: rgba(255,255,255,.12); }
+.au-q:active { transform: scale(.98); }
+.au-q .ico { background: rgba(255,255,255,.10); }
+.au-card { transition: background-color .2s ease; }
+a.au-card:hover { background: rgba(255,255,255,.10); }
+.au-chip { transition: background-color .2s ease; }
+.au-chip:not(.on):hover { background: rgba(255,255,255,.16); }
+.au-lib nav a { transition: background-color .2s ease, color .2s ease; }
+.au-lib nav a:hover { color: #fff; background: rgba(255,255,255,.07); }
+
+/* Account sheet: white titles, grey lines, icons in soft wells. */
+.au-account .au-row { padding: 10px; gap: 14px; }
+.au-account .au-row > svg { width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: rgba(255,255,255,.08); color: #E2C2FF; flex: none; }
+.au-account .au-row b { color: #fff; font-weight: 650; }
+.au-account .au-row small { color: rgba(255,255,255,.66); }
+
+/* ---------- Artist side: the same calm depth ---------- */
+.card { transition: box-shadow .25s ease, transform .25s ease; }
+a.card:hover, .card.click:hover { box-shadow: var(--rim-hi), var(--shadow); transform: translateY(-1px); }
+a.list-item:hover, .table tr.click:hover td, a.person:hover, .todo:hover { background: var(--surface-3); }
+.stat .value { font-weight: 750; letter-spacing: -0.035em; }
+h1 { letter-spacing: -0.04em; }
+.page-head .lede { color: var(--fg-2); }
+.btn { transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.btn-primary { background: linear-gradient(180deg, #8E2BDC, #7414C2); }
+.btn-primary:hover { background: linear-gradient(180deg, #9A3AE6, #7E1BCC); }
+.ah-cta { background: linear-gradient(180deg, #8E2BDC, #7414C2); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 6px 18px rgba(126,27,204,.28); }
+.ah-cta:hover { color: #fff; }
+.au-empty h1 { font-size: 22px; letter-spacing: -0.02em; }

@@ -29,7 +29,7 @@ app.route('/business', async ({ el, query }) => {
     ${d.songs.length ? html`<div class="grid grid-4">${d.songs.map(s => html`<a class="card" href="#/business/song/${s.id}" style="overflow:hidden;color:inherit;text-decoration:none">
         <div style="aspect-ratio:1.25;${raw(cover(s.title + s.artist_credit, s.artwork_url))};display:flex;align-items:flex-end;padding:12px;gap:6px">
           ${s.oneClick ? html`<span class="badge plain" style="background:rgba(255,255,255,.92);color:#0C0F14"><span style="width:7px;height:7px;border-radius:50%;background:#34C759"></span> Ready now</span>` : ''}
-          ${s.streamerSafe ? html`<span class="badge plain" style="background:rgba(0,0,0,.45);color:#fff">Streamer-safe</span>` : ''}</div>
+          ${s.streamerSafe ? html`<span class="badge plain" style="background:rgba(0,0,0,.66);color:#fff">Streamer-safe</span>` : ''}</div>
         <div class="card-pad" style="padding:14px 16px"><div style="font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
           <div class="row between small muted"><span>${s.artist_credit}</span><span>${s.from ? `from ${money(s.from)}` : 'Quote'}</span></div></div></a>`)}</div>`
       : html`<div class="card"><div class="empty"><div class="icon">${ico('search')}</div><h3>Nothing here yet</h3><p>Try another use, or clear the search.</p></div></div>`}`.s;
@@ -48,7 +48,7 @@ app.route('/business/song/:id', async ({ el, params, user }) => {
   const paint = () => {
     const u = d.uses.find(x => x.use === pick);
     el.innerHTML = html`<a href="#/business" class="small">← All music</a>
-    <div class="split-main" style="margin-top:14px;grid-template-columns:minmax(0,1fr) 400px">
+    <div class="split-main bz-buy" style="margin-top:14px">
       <div class="stack-lg">
         <div class="row" style="gap:22px;align-items:flex-end;flex-wrap:wrap">
           <div style="width:180px;height:180px;border-radius:26px;flex:none;box-shadow:var(--shadow-lg);${raw(cover(s.title + s.artist_credit, s.artwork_url))}"></div>
@@ -56,16 +56,16 @@ app.route('/business/song/:id', async ({ el, params, user }) => {
             <div class="row wrap" style="margin-top:6px">${s.isrc ? html`<span class="chip">ISRC ${s.isrc}</span>` : ''}${d.uses.some(x => x.use === 'stream' && x.oneClick) ? html`<span class="badge grad plain">Streamer-safe</span>` : ''}
             ${d.onelink ? html`<a class="badge accent plain" href="#/l/${d.onelink.handle}">${ico('link')} ${d.onelink.name}'s One Link</a>` : ''}</div></div>
         </div>
-        <div class="card" style="overflow:hidden"><div class="card-head"><h3>What's it for?</h3></div>
+        <div class="card" style="overflow:hidden"><div class="card-head"><h2 class="h3">What's it for?</h2></div>
           ${buyable.map(x => html`<label class="ol-row" style="cursor:pointer;padding-left:18px">
             <input type="radio" name="use" value="${x.use}" ${x.use === pick ? 'checked' : ''} style="accent-color:var(--au-purple);width:18px;height:18px">
             ${useTile(x.use, 40)}
             <div class="grow"><div class="t">${x.label}</div><div class="s">${x.hint}</div></div>
             <div style="text-align:right"><b class="num">${x.oneClick ? money(x.rate) : 'Quote'}</b>
-              <div class="small" style="color:${x.oneClick ? '#1F9D4C' : 'var(--muted)'}">${x.oneClick ? 'Ready now' : `${x.in} of ${x.total} said yes`}</div></div></label>`)}
+              <div class="small" style="color:${x.oneClick ? 'var(--ok)' : 'var(--muted)'}">${x.oneClick ? 'Ready now' : `${x.in} of ${x.total} said yes`}</div></div></label>`)}
         </div>
       </div>
-      <div class="card card-pad stack-lg" style="position:sticky;top:84px">
+      <div class="card card-pad stack-lg bz-buy-card">
         ${u ? html`<div class="row" style="gap:12px">${useTile(u.use, 48)}<div><div class="eyebrow">License</div><h3 style="font-size:19px">${u.label}</h3></div></div>
         ${u.oneClick ? html`<div class="pl-price">${money(u.rate)}</div>
           <div class="stack-sm">${u.owners.map(o => html`<div class="row small"><span style="width:18px;height:18px;border-radius:50%;background:#34C759;color:#fff;display:grid;place-items:center">${ico('check', 3)}</span>${o.name} said yes</div>`)}</div>`
@@ -105,7 +105,7 @@ app.route('/business/license/:id', async ({ el, params, query }) => {
     <div class="card" style="overflow:hidden">
       <div style="padding:28px;display:flex;gap:18px;align-items:center;background:var(--au-grad);color:#fff">
         <div style="width:76px;height:76px;border-radius:18px;flex:none;${raw(cover(l.title + l.artist_credit))}"></div>
-        <div style="flex:1;min-width:0"><div class="eyebrow" style="color:rgba(255,255,255,.7)">${l.useLabel} license</div><h2 style="color:#fff;font-size:24px">${l.title}</h2><div style="opacity:.8">${l.artist_credit}</div></div>
+        <div style="flex:1;min-width:0"><div class="eyebrow" style="color:rgba(255,255,255,.9)">${l.useLabel} license</div><h2 style="color:#fff;font-size:24px">${l.title}</h2><div style="opacity:.8">${l.artist_credit}</div></div>
         <span class="badge plain" style="background:${valid ? 'rgba(255,255,255,.95)' : '#fde7e9'};color:${valid ? '#1F9D4C' : '#D12C3B'};padding:6px 12px">${valid ? html`${ico('check', 3)} Verified` : 'Not valid'}</span>
       </div>
       <div class="card-pad stack">
@@ -133,7 +133,7 @@ app.route('/business/licenses', async ({ el }) => {
         ${q.status === 'quoted' ? html`<button class="btn btn-primary btn-sm" data-accept="${q.id}">Pay ${money(q.price)}</button>` : ''}</div>`)}</div></div>` : ''}
     <div class="card" style="overflow:hidden">${(d.licenses || d.licences).length ? html`<div class="list">${(d.licenses || d.licences).map(l => html`<a class="list-item" href="#/business/license/${l.id}">${useTile(l.use, 40)}
       <div class="grow"><div class="title">${l.title}</div><div class="sub">${l.useLabel} · ${l.project} · ${date(l.created_at)}</div></div><b class="num">${money(l.price)}</b>${ico('chev')}</a>`)}</div>`
-      : html`<div class="empty"><div class="icon">${ico('receipt')}</div><h3>No licenses yet</h3><p>Licenses you buy show up here, ready to show anyone who asks.</p></div>`}</div>`.s;
+      : html`<div class="empty"><div class="icon">${ico('receipt')}</div><h2 class="h3">No licenses yet</h2><p>Licenses you buy show up here, ready to show anyone who asks.</p></div>`}</div>`.s;
   on(el, 'click', '[data-accept]', async (e, t) => { const lic = await busy(t, () => api.post(`/api/business/quotes/${t.dataset.accept}/accept`)); app.go(`/business/license/${lic.id}?new=1`); });
 }, { auth: true, title: 'My licenses' });
 
@@ -153,8 +153,8 @@ app.route('/business/streamers', async ({ el, user }) => {
         <div class="card pl-stat"><div class="v">${(total / 60).toFixed(1)}</div><div class="l">Hours of music this month</div></div>
         <div class="card pl-stat"><div class="v">${d.plays.length}</div><div class="l">Artists you paid</div></div>
         <div class="card pl-stat"><div class="v">${d.songs.length}</div><div class="l">Streamer-safe songs</div></div></div>`
-      : html`<form class="card card-pad stack" id="jf" style="margin-bottom:18px"><h3>Clear your channel</h3>
-        <div class="row wrap" style="gap:10px"><select class="input" name="platform" style="width:170px">${['Twitch', 'YouTube', 'Kick', 'TikTok Live'].map(p => html`<option>${p}</option>`)}</select>
+      : html`<form class="card card-pad stack" id="jf" style="margin-bottom:18px"><h2 class="h3">Clear your channel</h2>
+        <div class="row wrap" style="gap:10px"><select class="input" name="platform" aria-label="Streaming platform" style="width:170px">${['Twitch', 'YouTube', 'Kick', 'TikTok Live'].map(p => html`<option>${p}</option>`)}</select>
           <input class="input" name="channel" required placeholder="twitch.tv/yourchannel" style="flex:1;min-width:200px">
           <button class="btn btn-primary">${user ? `Start for ${money(d.plan)}/mo` : 'Sign in to start'}</button></div>
         <div class="small muted">Test mode: no card is charged yet. Channel allow-listing switches on with our distribution partner.</div></form>`}
@@ -185,15 +185,15 @@ app.songTab({
         <div class="stack-lg">
           ${!d.signed ? html`<div class="callout warn">${ico('info')}<div>Get the split signed first. Then everyone on it can say yes to licensing.</div></div>` : ''}
           <div class="card" style="overflow:hidden">
-            <div class="card-head"><div><h3>Your rate card</h3><div class="small muted">Turn on what businesses can license, and set your price.</div></div>
+            <div class="card-head"><div><h2 class="h3">Your rate card</h2><div class="small muted">Turn on what businesses can license, and set your price.</div></div>
               ${canManage ? html`<button class="btn btn-primary btn-sm" data-save>Save</button>` : ''}</div>
             ${d.card.map(c => html`<div class="ol-row" style="padding-left:18px" data-use="${c.use}">
               ${useTile(c.use, 40)}
               <div class="grow"><div class="t">${c.label}</div><div class="s">${c.hint}</div></div>
-              ${c.listed ? html`<span class="small" style="color:${c.oneClick ? '#1F9D4C' : 'var(--muted)'};min-width:96px;text-align:right">${c.oneClick ? 'Ready now' : `${c.yes} of ${c.total} said yes`}</span>` : ''}
+              ${c.listed ? html`<span class="small" style="color:${c.oneClick ? 'var(--ok)' : 'var(--muted)'};min-width:96px;text-align:right">${c.oneClick ? 'Ready now' : `${c.yes} of ${c.total} said yes`}</span>` : ''}
               ${c.use === 'stream' ? html`<span class="small muted" style="width:110px;text-align:right">Paid by hours</span>`
                 : html`<div style="position:relative;width:110px"><span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)">$</span>
-                  <input class="input num" name="price" value="${c.price != null ? (c.price / 100).toFixed(0) : (USES_SUGGEST[c.use] / 100).toFixed(0)}" ${canManage ? '' : 'disabled'} inputmode="decimal" style="padding-left:24px;text-align:right"></div>`}
+                  <input class="input num" name="price" value="${c.price != null ? (c.price / 100).toFixed(0) : (USES_SUGGEST[c.use] / 100).toFixed(0)}" ${canManage ? '' : 'disabled'} inputmode="decimal" aria-label="Price for ${c.label} in dollars" style="padding-left:24px;text-align:right"></div>`}
               <button class="toggle ${c.listed ? 'on' : ''}" ${canManage ? '' : 'disabled'} data-toggle aria-label="${c.label}"></button></div>`)}
           </div>
           ${(d.licenses || d.licences).length ? html`<div class="card" style="overflow:hidden"><div class="card-head"><h3>Licenses sold</h3></div><div class="list">${(d.licenses || d.licences).map(l => html`<a class="list-item" href="#/business/license/${l.id}">${useTile(l.use, 36)}

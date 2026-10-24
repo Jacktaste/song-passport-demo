@@ -56,11 +56,11 @@ svg.pl-i { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
 
 /* Featured music block: big art, then where to listen. */
 .ol-hero { border-radius: 24px; overflow: hidden; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.09); }
-.ol-hero .cover { aspect-ratio: 1.6; display: flex; align-items: flex-end; padding: 18px; background-size: cover; background-position: center; position: relative; }
-.ol-hero .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,.55)); }
+.ol-hero .cover { aspect-ratio: 1.6; display: flex; flex-direction: row; align-items: flex-end; color: #fff; gap: 0; padding: 18px; background-size: cover; background-position: center; position: relative; }
+.ol-hero .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,.7)); }
 .ol-hero .cover > * { position: relative; z-index: 1; }
 .ol-hero .cover .t { font: 800 26px/1.05 var(--display); letter-spacing: -0.03em; }
-.ol-hero .cover .s { font-size: 13px; color: rgba(255,255,255,.75); margin-top: 3px; }
+.ol-hero .cover .s { font-size: 13px; color: rgba(255,255,255,.9); margin-top: 3px; }
 .compact .ol-hero .cover { padding: 12px; } .compact .ol-hero .cover .t { font-size: 18px; }
 .ol-services { display: flex; gap: 8px; padding: 12px; }
 .ol-services a, .ol-services span { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 14px; background: rgba(255,255,255,.07);
@@ -170,3 +170,8 @@ svg.pl-i { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
 .pl-hero p { color: rgba(255,255,255,.8); font-size: 17px; max-width: 520px; margin-top: 10px; }
 .pl-strike { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
 .pl-strike span { padding: 6px 12px; border-radius: 99px; background: rgba(255,255,255,.14); font-size: 13px; text-decoration: line-through; text-decoration-color: rgba(255,255,255,.7); color: rgba(255,255,255,.85); }
+
+/* Licensing a song: the song on the left, the license card on the right; one column on phones and iPad portrait. */
+.split-main.bz-buy { grid-template-columns: minmax(0, 1fr) 400px; }
+.bz-buy-card { position: sticky; top: 84px; }
+@media (max-width: 1100px) { .split-main.bz-buy { grid-template-columns: minmax(0, 1fr); } .bz-buy-card { position: static; } }

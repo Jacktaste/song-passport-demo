@@ -225,7 +225,7 @@ function shell(el, active, inner, { full = false } = {}) {
   el.closest('.public')?.classList.add('au-public');
   el.innerHTML = html`<div class="au ${P.song ? 'np' : ''} ${full ? 'full' : ''}">
     <aside class="au-lib" aria-label="Your library"></aside>
-    <main class="au-main">${inner}</main>
+    <div class="au-main">${inner}</div>
     <aside class="au-np" aria-label="Now playing"></aside>
   </div>`.s;
   dock(active, full);
@@ -330,7 +330,7 @@ function wireLists(main, lists) {
     if (i >= 0) playList(list, i);
   });
 }
-const signInCard = (title, text) => html`<div class="au-empty"><h2>${title}</h2><p>${text}</p><button class="au-btn" data-signin>Sign in</button></div>`;
+const signInCard = (title, text, h1 = false) => html`<div class="au-empty">${h1 ? html`<h1>${title}</h1>` : html`<h2>${title}</h2>`}<p>${text}</p><button class="au-btn" data-signin>Sign in</button></div>`;
 
 // ---------- Home ----------
 app.route('/listen', async ({ el, user }) => {
@@ -343,15 +343,21 @@ app.route('/listen', async ({ el, user }) => {
     { id: 'new', title: 'New from artists you play', color: '#1F9E7A' },
     { id: 'top', title: 'Top this month', color: '#B8901A' }
   ];
+  const coming = d.coming || [];
   const playedOwners = new Set((h.tiles || []).map(t => t.id));
   const newFromYours = d.latest.filter(s => playedOwners.has(s.owner_id));
   const paint = async () => {
     const lib0 = user && chip !== 'music' ? await lib() : null;
     const rc = h.receipt;
+    // The page takes its colour from the featured cover: the app floats over the music.
+    const pool = [...d.top, ...d.latest, ...lists.open, ...coming].filter(x => x.artwork_url);
+    const hero = d.top[0] || d.latest[0] || lists.open[0] || coming[0] || null;
+    backdrop(main, hero?.artwork_url);
     main.innerHTML = html`
       <div class="au-head"><div class="au-hi">${user ? html`<button class="au-me" data-me aria-label="Your account">${initials(user.name || user.email)}</button>` : ''}<h1>${user ? greeting() : 'Audius'}</h1></div><span class="au-noads">No ads</span></div>
       <div class="au-chips">${[['music', 'Music'], ['presales', 'Presales'], ['owned', 'Owned'], ['following', 'Following']].map(([k, l]) => html`<button class="au-chip ${chip === k ? 'on' : ''}" data-chip="${k}">${l}</button>`)}</div>
       ${chip === 'music' ? html`
+        ${hero ? heroCard(hero) : ''}
         ${user ? html`<div class="au-quick">
           ${(h.tiles || []).slice(0, 3).map(t => html`<a class="au-q" href="#/listen/artist/${t.id}">${art(t.title)}<b>${t.title}</b></a>`)}
           <a class="au-q" href="#/listen/library?tab=liked"><span class="ico" style="background:#7E1BCC;color:#fff">${I('heart')}</span><b>Liked songs</b></a>
@@ -365,10 +371,12 @@ app.route('/listen', async ({ el, user }) => {
             <div class="big">Your money goes only to the artists you play.</div><div class="muted small">Every month, a receipt shows exactly who you paid. Plans from ${money(d.plans.artist.price).replace(".00", "")}.</div></a>`}
         ${(h.presales || []).slice(0, 1).map(p => presaleCard(p))}
         <div class="au-h2"><h2>Made for you</h2></div>
-        <div class="au-shelf">${mixes.map(m => html`<button class="au-tile" data-mix="${m.id}"><div class="au-art gen" style="background:${m.color}"></div><small style="margin-top:0">${m.title}</small></button>`)}</div>
+        <div class="au-shelf">${mixes.map((m, i) => mixTile(m, pool, i))}</div>
         ${d.top.length ? html`<div class="au-h2"><h2>Top this month</h2><small>By minutes played</small></div><div class="au-shelf">${d.top.map(s => tile(s, 'top'))}</div>` : ''}
-        <div class="au-h2"><h2>New on Audius</h2></div>
-        ${d.latest.length ? html`<div class="au-shelf">${d.latest.map(s => tile(s, 'latest'))}</div>` : html`<p class="muted">Artists are adding their songs now.</p>`}
+        ${d.latest.length ? html`<div class="au-h2"><h2>New on Audius</h2></div><div class="au-shelf">${d.latest.map(s => tile(s, 'latest'))}</div>`
+          : coming.length ? '' : html`<div class="au-h2"><h2>New on Audius</h2></div><p class="muted">Artists are adding their songs now.</p>`}
+        ${coming.length ? html`<div class="au-h2"><h2>Coming to Audius</h2><small>From Song Passports</small></div>
+          <div class="au-shelf">${coming.map(s => html`<div class="au-tile upcoming">${songArt(s)}<b>${s.title}</b><small>${s.artist_credit}</small></div>`)}</div>` : ''}
         ${d.artists.length ? html`<div class="au-h2"><h2>Artists</h2></div><div class="au-shelf">${dedupeArtists(d).map(a => html`<a class="au-tile round" href="#/listen/artist/${a.owner}">${art(a.name)}<b>${a.name}</b></a>`)}</div>` : ''}
         ${openShelf(lists.open)}`
       : chip === 'presales' ? html`${(h.presales || []).length ? h.presales.map(p => presaleCard(p)) : html`<div class="au-empty"><h2>No presales right now</h2><p>Follow artists and they'll show up here first.</p></div>`}`
@@ -391,11 +399,40 @@ app.route('/listen', async ({ el, user }) => {
     await busy(t, () => api.post(`/api/listen/remind/${t.dataset.remind}`));
     t.textContent = 'We’ll remind you'; t.classList.add('done'); toast('We’ll remind you when it opens');
   });
+  on(main, 'click', '[data-hero]', (e, t) => {
+    const list = [d.top, d.latest, lists.open].find(l => l.some(x => x.id === t.dataset.hero)) || [];
+    const i = list.findIndex(x => x.id === t.dataset.hero);
+    if (i >= 0) playList(list, i);
+  });
   on(main, 'click', '[data-me]', () => accountSheet());
   on(main, 'click', '[data-signin]', signIn);
   wireLists(main, lists);
 }, { public: true, title: 'Audius' });
 
+function heroCard(s) {
+  const playable = !s.coming;
+  const eyebrow = s.coming ? 'Coming to Audius' : s.open_audio ? 'Trending on the Open Audio Protocol' : 'Featured for you';
+  return html`<section class="au-hero">
+    ${songArt(s, 'big')}
+    <div class="t"><small>${eyebrow}</small><h2>${s.title}</h2><p>${s.artist_credit}</p>
+      ${playable ? html`<button class="au-heroplay" data-hero="${s.id}" aria-label="Play ${s.title}">${I('play', 'width:20px;height:20px')}<span>Play</span></button>`
+        : html`<span class="au-herosoon">Arriving soon</span>`}</div></section>`;
+}
+// A mix is shown as four real covers, Apple Music style; a flat colour only when there is no art at all.
+function mixTile(m, pool, i) {
+  const n = pool.length, pick = n ? [0, 1, 2, 3].map(k => pool[(i * 4 + k) % n].artwork_url) : [];
+  const covers = [...new Set(pick)];
+  const face = covers.length >= 4 ? html`<div class="au-mix four">${covers.slice(0, 4).map(u => html`<i style="background-image:url('${esc(String(u).replace(/'/g, '%27'))}')"></i>`)}</div>`
+    : covers.length ? html`<div class="au-mix one"><i style="background-image:url('${esc(String(covers[0]).replace(/'/g, '%27'))}')"></i></div>`
+    : html`<div class="au-mix none" style="--c:${m.color}"></div>`;
+  return html`<button class="au-tile mix" data-mix="${m.id}">${face}<span class="au-mixname"><b>${m.title}</b></span></button>`;
+}
+function backdrop(main, url) {
+  const au = main.closest('.au');
+  if (!au) return;
+  if (url) au.style.setProperty('--au-backdrop', `url('${String(url).replace(/'/g, '%27')}')`);
+  else au.style.removeProperty('--au-backdrop');
+}
 function dedupeArtists(d) {
   const seen = new Map();
   for (const s of [...d.top, ...d.latest]) if (!seen.has(s.owner_id)) seen.set(s.owner_id, { owner: s.owner_id, name: s.artist_credit });
@@ -412,7 +449,7 @@ function accountSheet() {
   sheet((el, close) => {
     darkSheet(el);
     const u = app.user;
-    el.innerHTML = html`<div class="stack" style="gap:12px">
+    el.innerHTML = html`<div class="stack au-account" style="gap:12px">
       <div class="row" style="gap:12px"><span class="au-me" style="width:48px;height:48px;font-size:18px">${initials(u.name || u.email)}</span><div><b>${u.name || u.email.split('@')[0]}</b><div class="muted small">${u.email}</div></div></div>
       <a class="au-row" href="#/listen/switch">${I('star')}<div class="t"><b>Plan and AI music</b><small>Change plan, pay with AUDIO, AI on or off</small></div></a>
       <a class="au-row" href="#/key">${I('key')}<div class="t"><b>Listener Keys</b><small>Your level with each artist</small></div></a>
@@ -456,7 +493,7 @@ const inviteText = name => `${name}, I want to listen to you on Audius. My money
 app.route('/listen/library', async ({ el, user, query }) => {
   let tab = query.get('tab') || 'all';
   const main = shell(el, '/listen/library', '');
-  if (!user) { main.innerHTML = signInCard('Your library', 'Liked songs, songs you own, Artist Passes and the artists you follow.').s; on(main, 'click', '[data-signin]', signIn); return; }
+  if (!user) { main.innerHTML = signInCard('Your library', 'Liked songs, songs you own, Artist Passes and the artists you follow.', true).s; on(main, 'click', '[data-signin]', signIn); return; }
   const d = await lib();
   const lists = { liked: d.liked, owned: d.owned, played: d.played };
   let keys = null;
