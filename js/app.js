@@ -94,6 +94,7 @@ function parseHash() {
 }
 
 let routeSeq = 0;
+let lastRoute = null;   // pattern + params of the page on screen, to tell a subtab switch from a new page
 const skRows = n => Array.from({ length: n }, (_, i) => `<div class="sk-row"><div class="skeleton sk-art"></div><div style="flex:1" class="stack-sm"><div class="skeleton" style="height:13px;width:${46 + (i * 17) % 30}%"></div><div class="skeleton" style="height:11px;width:${24 + (i * 11) % 20}%"></div></div></div>`).join('');
 const SKELETONS = {
   list: `<div class="stack-lg" aria-busy="true" aria-label="Loading"><div class="skeleton" style="height:40px;width:42%;border-radius:12px"></div><div class="card">${skRows(6)}</div></div>`,
@@ -117,6 +118,12 @@ async function route() {
   // swaps them in one view transition (a short fade out and a slide in), so nothing blanks or flashes. A slow page
   // shows its skeleton after a moment instead. Switching between the sidebar app and a full-screen page repaints.
   const sameKind = routeSeq > 1 && (publicPage ? !!pub : !!root.querySelector('.shell'));
+  // Same page, only the query changed (a subtab like ?tab=splits, a filter): swap in place, keep the scroll position,
+  // no slide and no skeleton.
+  const routeKey = match.pattern + JSON.stringify(params);
+  const inPlace = sameKind && lastRoute === routeKey;
+  lastRoute = routeKey;
+  const keepY = window.scrollY;
   if (publicPage && !pub) {
     root.innerHTML = `<main class="public"><div class="public-inner" id="view"></div></main>`;
   } else if (!publicPage) {
@@ -141,9 +148,10 @@ async function route() {
       el.style.width = '';
       old.isConnected ? old.replaceWith(el) : (el.isConnected || document.getElementById('view')?.replaceWith(el));
       if (publicPage) el.closest('.public')?.classList.toggle('au-public', !!el.querySelector(':scope > .au'));
-      window.scrollTo(0, 0);
+      window.scrollTo(0, inPlace ? keepY : 0);
     };
-    if (motion && sameKind) {
+    if (inPlace) put();
+    else if (motion && sameKind) {
       el.remove(); // off the page while the old view is captured, so no view-transition name appears twice
       const vt = document.startViewTransition(put);
       vt.ready.catch(() => {}); vt.finished.catch(() => {}); // a quick next tap skips this one, which is fine
@@ -155,7 +163,7 @@ async function route() {
     el.setAttribute('aria-hidden', 'true');
     el.style.width = `${old.getBoundingClientRect().width}px`;
     old.after(el);
-    setTimeout(show, 450);
+    setTimeout(show, inPlace ? 1500 : 450);
   } else await show();
   document.title = (match.title ? match.title + ' · ' : '') + 'Audius';
   try {
